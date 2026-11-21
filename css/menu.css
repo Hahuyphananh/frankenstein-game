@@ -260,6 +260,8 @@
   gap: clamp(20px, 4vh, 40px);
   max-width: 1040px;
   min-height: min(78vh, 720px);
+  animation: none;
+  transform: none;
 }
 
 .hud {
@@ -281,6 +283,7 @@
 }
 
 .hud__objective {
+  display: none;
   max-width: 36ch;
   margin: 7px 0 0;
   color: var(--bone-dim);
@@ -448,10 +451,15 @@
 }
 
 .stage-bar {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  width: min(1040px, calc(100vw - 32px));
   padding: 12px 16px;
   border: 1px solid var(--line);
   background: rgba(5, 9, 12, 0.72);
@@ -460,6 +468,7 @@
   font-size: 0.62rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  transform: translateX(-50%);
   backdrop-filter: blur(6px);
 }
 
@@ -480,132 +489,6 @@
   color: var(--bone);
 }
 
-.stage-view-switch {
-  position: fixed;
-  right: 16px;
-  bottom: 18px;
-  z-index: 4;
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid rgba(214, 179, 106, 0.35);
-  border-radius: 4px;
-  background: rgba(4, 8, 10, 0.78);
-  box-shadow: 0 12px 30px -18px #000;
-  backdrop-filter: blur(7px);
-}
-
-.stage-view-switch__btn {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 2px;
-  background: transparent;
-  color: rgba(239, 232, 214, 0.55);
-  font-family: var(--mono);
-  font-size: 1.2rem;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    color 0.18s var(--ease),
-    background 0.18s var(--ease),
-    border-color 0.18s var(--ease);
-}
-
-.stage-view-switch__btn:hover {
-  border-color: rgba(214, 179, 106, 0.3);
-  background: rgba(214, 179, 106, 0.07);
-  color: var(--bone);
-}
-
-.stage-view-switch__btn.is-active {
-  border-color: rgba(214, 179, 106, 0.55);
-  background: rgba(214, 179, 106, 0.12);
-  color: var(--acid);
-}
-
-.stage-view-switch__btn:focus-visible {
-  outline: 2px solid var(--acid);
-  outline-offset: 2px;
-}
-
-body[data-map-layout="full"] .stage-view-switch {
-  bottom: 70px;
-}
-
-/* --------------------------------------------------------------------------
-   Immersive map
-   -------------------------------------------------------------------------- */
-
-body[data-map-layout="full"] .screen--stage {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  width: 100%;
-  max-width: none;
-  min-height: 100vh;
-  min-height: 100dvh;
-  height: 100vh;
-  height: 100dvh;
-  padding: 0;
-  gap: 0;
-  pointer-events: none;
-  animation: none;
-}
-
-body[data-map-layout="full"] .screen--stage > * {
-  pointer-events: auto;
-}
-
-body[data-map-layout="full"] .hud {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  left: 12px;
-  z-index: 3;
-  align-items: center;
-  margin: 0;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  background: rgba(4, 8, 10, 0.72);
-  box-shadow: 0 18px 50px -28px #000;
-  backdrop-filter: blur(8px);
-}
-
-body[data-map-layout="full"] .hud__title-wrap .label,
-body[data-map-layout="full"] .hud__objective {
-  display: none;
-}
-
-body[data-map-layout="full"] .hud__title {
-  margin: 0;
-  font-size: 0.78rem;
-  letter-spacing: 0.1em;
-}
-
-body[data-map-layout="full"] .hud__actions {
-  gap: 6px;
-}
-
-body[data-map-layout="full"] .hud__actions .btn {
-  min-height: 36px;
-  padding: 8px 10px;
-}
-
-body[data-map-layout="full"] .stage-bar {
-  position: absolute;
-  right: 12px;
-  bottom: 10px;
-  left: 12px;
-  z-index: 3;
-  background: rgba(5, 9, 12, 0.74);
-}
 
 @media (max-height: 760px) {
   .shell {
@@ -663,47 +546,6 @@ body[data-map-layout="full"] .stage-bar {
     flex-wrap: wrap;
   }
 
-  body[data-map-layout="full"] .hud {
-    top: 8px;
-    right: 8px;
-    left: 8px;
-    flex-direction: row;
-    align-items: center;
-    padding: 6px 7px;
-  }
-
-  body[data-map-layout="full"] .hud__title-wrap {
-    display: none;
-  }
-
-  body[data-map-layout="full"] .hud__actions {
-    flex: 1;
-    justify-content: flex-start;
-    gap: 4px;
-  }
-
-  body[data-map-layout="full"] .hud__actions .btn {
-    min-height: 32px;
-    padding: 6px 7px;
-  }
-
-  body[data-map-layout="full"] .stage-bar {
-    display: none;
-  }
-
-  .stage-view-switch {
-    right: 10px;
-    bottom: 10px;
-  }
-
-  body[data-map-layout="full"] .stage-view-switch {
-    bottom: 10px;
-  }
-
-  .stage-view-switch__btn {
-    width: 40px;
-    height: 40px;
-  }
 }
 
 .stage-result {
@@ -1160,11 +1002,6 @@ body[data-map-layout="full"] .stage-bar {
   display: none;
 }
 
-/* Keep the windowed title block from running underneath the map. */
-body[data-map-layout="windowed"] .hud__objective {
-  display: none;
-}
-
 /* --------------------------------------------------------------------------
    Creature power HUD
    -------------------------------------------------------------------------- */
@@ -1308,16 +1145,4 @@ body[data-map-layout="windowed"] .hud__objective {
     letter-spacing: 0;
   }
 
-  #btn-map-layout {
-    width: 42px;
-    min-width: 42px;
-    padding: 0;
-    font-size: 0;
-  }
-
-  #btn-map-layout::before {
-    content: "Carte";
-    font-size: 0.55rem;
-    letter-spacing: 0.04em;
-  }
 }

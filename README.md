@@ -20,7 +20,7 @@ Inspiré du roman *Frankenstein* de Mary Shelley.
 - La ruée est plus rapide et plus longue, et brise **tous les murs** qu’elle traverse, dans les trois difficultés.
 - Elizabeth est invulnérable pendant les quatre secondes de protection qui suivent la réapparition de la Créature.
 - Positions de départ aléatoires pour Victor, Elizabeth et la Créature ; chaque nouvelle partie et chaque Recommencer évite de reprendre exactement les mêmes cases.
-- Carte en plein écran par défaut, avec bascule vers une carte en fenêtre.
+- Carte adaptée à la fenêtre, avec une barre de commandes fixée en bas de page et séparée du plateau.
 - Interface, textes du récit, consignes et documentation entièrement en français.
 - Aucune dépendance, aucun appel réseau et aucune clé d’API.
 
@@ -136,11 +136,11 @@ En Normal et en Difficile, `buildRiskField()` construit un champ de coût de typ
 - La réapparition de la Créature après un contact reste séparée de la position de Victor.
 - En mode 2 joueurs, il n’y a qu’une seule vie et aucune réapparition : le premier contact avec Victor termine la partie.
 
-## Carte plein écran
+## Carte et commandes
 
-- Le niveau s’ouvre dans une vue immersive qui remplit toute la largeur et la hauteur de l’écran, avec une interface compacte en surimpression. La carte est recadrée sur les murs extérieurs si nécessaire pour couvrir un écran de portable 16:9 ou 16:10, avec le panneau de commandes en surimpression.
-- Le bouton **Fenêtré** de l’interface, la touche `F`, ou les flèches **↙** et **↗** en bas à droite basculent entre la scène encadrée et le plein écran. La flèche active est mise en évidence ; le choix est conservé avec les autres réglages.
-- Sur petit écran, les libellés secondaires et le bouton de son de la scène sont masqués pour laisser toute la place au labyrinthe. Le bouton de carte devient **Carte**.
+- Le plateau est ajusté à la fenêtre et reste au-dessus de la barre de commandes.
+- La barre de commandes est fixée en bas de la page. Un espace est réservé entre le bas du plateau et la barre pour qu’elle ne recouvre jamais la carte.
+- Sur petit écran, les libellés secondaires et le bouton de son de la scène sont masqués pour laisser toute la place au labyrinthe.
 - En mode Protection, l’indicateur de ruée et le compteur de murs restent visibles sur mobile. En mode 2 joueurs, la jauge de ruée est masquée.
 
 ## Temps et score
@@ -206,8 +206,7 @@ Le jeu est entièrement statique : le HTML, le CSS, les modules JavaScript, les 
 | ------ | ------ |
 | `W` `A` `S` `D` | Déplacer Victor dans les deux modes |
 | `↑` `↓` `←` `→` | Mode Protection : déplacer Victor. Mode 2 joueurs : déplacer la Créature. |
-| `P` | Mettre le temps en pause / reprendre |
-| `F` | Basculer entre carte plein écran et fenêtre |
+| `P` | Mettre la partie en pause / reprendre |
 | `Échap` | Quitter le labyrinthe / fermer la fenêtre |
 | `Entrée` | Lancer la partie depuis le menu |
 

@@ -45,8 +45,6 @@ export class Game {
       onMode: (id) => this.setMode(id),
       onDifficulty: (id) => this.setDifficulty(id),
       onSound: () => this.toggleSound(),
-      onMapLayout: () => this.toggleMapLayout(),
-      onLayout: (layout) => this.setMapLayout(layout),
       onInstructions: () => this.openInstructions(),
       onInstructionsClosed: () => this.audio.play('close'),
     });
@@ -59,7 +57,6 @@ export class Game {
 
   init() {
     this.view.applySettings(this.settings);
-    this.renderer.setMapLayout(this.settings.mapLayout);
     this.view.showScreen('menu');
     this.renderer.setScreen('menu');
     this.keyboard.onKeyDown((event) => this.handleKey(event));
@@ -415,22 +412,6 @@ export class Game {
     if (this.settings.sound) this.audio.play('toggle');
   }
 
-  /** Set the map presentation and keep both layout controls in sync. */
-  setMapLayout(layout) {
-    const next = layout === 'full' ? 'full' : 'windowed';
-    if (this.settings.mapLayout === next) return;
-
-    this.settings.mapLayout = next;
-    this.view.setMapLayout(next);
-    this.renderer.setMapLayout(next);
-    this.persist(this.settings);
-    this.audio.play('move');
-  }
-
-  toggleMapLayout() {
-    this.setMapLayout(this.settings.mapLayout === 'full' ? 'windowed' : 'full');
-  }
-
   openInstructions() {
     this.audio.play('open');
     this.view.openInstructions();
@@ -444,12 +425,6 @@ export class Game {
       if (event.code === 'KeyP') {
         event.preventDefault();
         this.togglePause();
-        return;
-      }
-
-      if (event.code === 'KeyF') {
-        event.preventDefault();
-        this.toggleMapLayout();
         return;
       }
 

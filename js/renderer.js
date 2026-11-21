@@ -35,7 +35,6 @@ export class StageRenderer {
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.maze = maze;
     this.screen = 'menu';
-    this.mapLayout = 'full';
     this.width = 1;
     this.height = 1;
     this.dpr = 1;
@@ -85,16 +84,6 @@ export class StageRenderer {
     if (screen !== 'menu' && screen !== 'stage') return;
     if (this.screen === screen) return;
     this.screen = screen;
-    this.computeCamera();
-    this.buildFloorLayer();
-    this.buildWallLayer();
-  }
-
-  /** Switch between the immersive viewport map and a windowed stage. */
-  setMapLayout(layout) {
-    if (layout !== 'full' && layout !== 'windowed') return;
-    if (this.mapLayout === layout) return;
-    this.mapLayout = layout;
     this.computeCamera();
     this.buildFloorLayer();
     this.buildWallLayer();
@@ -201,30 +190,25 @@ export class StageRenderer {
     this.buildWallLayer();
   }
 
-  /** Full view covers the viewport; windowed mode keeps every tile visible. */
+  /** Fit the board above the fixed command bar; no immersive/fullscreen mode. */
   computeCamera() {
     const stage = this.screen === 'stage';
-    const full = stage && this.mapLayout === 'full';
-    const insets = full
-      ? { top: 0, right: 0, bottom: 0, left: 0 }
-      : stage
-        ? {
-            top: Math.min(120, Math.round(this.height * 0.16)),
-            right: 20,
-            bottom: Math.min(84, Math.round(this.height * 0.12)),
-            left: 20,
-          }
-        : { top: 0, right: 0, bottom: 0, left: 0 };
+    const insets = stage
+      ? {
+          top: Math.min(120, Math.round(this.height * 0.16)),
+          right: 20,
+          bottom: Math.min(140, Math.round(this.height * 0.12) + 24),
+          left: 20,
+        }
+      : { top: 0, right: 0, bottom: 0, left: 0 };
 
     this.camera.fit({
       viewportWidth: this.width,
       viewportHeight: this.height,
       columns: this.maze.columns,
       rows: this.maze.rows,
-      maxCell: stage ? (full ? 240 : 40) : 44,
+      maxCell: stage ? 40 : 44,
       insets,
-      cover: full,
-      fractional: full,
     });
   }
 

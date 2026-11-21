@@ -175,15 +175,6 @@
               </div>
               <span class="chip" id="stage-difficulty" data-level="normal">Normal</span>
               <button
-                class="btn btn--ghost btn--small"
-                id="btn-map-layout"
-                type="button"
-                aria-pressed="true"
-                aria-label="Passer à la carte en fenêtre"
-              >
-                Fenêtré
-              </button>
-              <button
                 class="btn btn--ghost btn--small sound-toggle"
                 data-sound-toggle
                 type="button"
@@ -205,37 +196,8 @@
             </p>
             <p class="stage-bar__hint">
               <span class="stage-bar__keys"><kbd>P</kbd></span><span>pause</span>
-              <span class="stage-bar__keys"><kbd>F</kbd></span><span>taille de la carte</span>
               <span class="stage-bar__keys"><kbd>Échap</kbd></span><span>menu</span>
             </p>
-          </div>
-
-          <div
-            class="stage-view-switch"
-            id="stage-view-switch"
-            role="group"
-            aria-label="Taille de la carte"
-          >
-            <button
-              class="stage-view-switch__btn"
-              type="button"
-              data-stage-layout="windowed"
-              aria-label="Afficher la carte en fenêtre"
-              aria-pressed="false"
-              title="Carte en fenêtre"
-            >
-              <span aria-hidden="true">↙</span>
-            </button>
-            <button
-              class="stage-view-switch__btn"
-              type="button"
-              data-stage-layout="full"
-              aria-label="Afficher la carte en plein écran"
-              aria-pressed="true"
-              title="Carte plein écran"
-            >
-              <span aria-hidden="true">↗</span>
-            </button>
           </div>
 
           <div class="stage-result" id="stage-result" hidden>
@@ -401,10 +363,6 @@
               <li>
                 <span class="keys__combo"><kbd>P</kbd></span>
                 <span>Mettre la partie en pause / reprendre</span>
-              </li>
-              <li>
-                <span class="keys__combo"><kbd>F</kbd></span>
-                <span>Basculer entre carte plein écran et fenêtre</span>
               </li>
               <li>
                 <span class="keys__combo"><kbd>Échap</kbd></span>

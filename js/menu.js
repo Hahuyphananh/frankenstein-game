@@ -23,8 +23,6 @@ export class MenuView {
     this.playButton = byId('btn-play');
     this.instructionsButton = byId('btn-instructions');
     this.difficultyChip = byId('stage-difficulty');
-    this.mapLayoutButton = byId('btn-map-layout');
-    this.layoutButtons = [...document.querySelectorAll('[data-stage-layout]')];
     this.dialog = byId('instructions-dialog');
     this.modeRadios = [...document.querySelectorAll('input[name="mode"]')];
     this.radios = [...document.querySelectorAll('input[name="difficulty"]')];
@@ -76,10 +74,6 @@ export class MenuView {
     byId('btn-pause-menu').addEventListener('click', () => handlers.onBack?.());
     byId('btn-back').addEventListener('click', () => handlers.onBack?.());
     this.instructionsButton.addEventListener('click', () => handlers.onInstructions?.());
-    this.mapLayoutButton.addEventListener('click', () => handlers.onMapLayout?.());
-    this.layoutButtons.forEach((button) => {
-      button.addEventListener('click', () => handlers.onLayout?.(button.dataset.stageLayout));
-    });
     byId('btn-close-instructions').addEventListener('click', () => this.dialog.close());
     byId('btn-close-instructions-2').addEventListener('click', () => this.dialog.close());
 
@@ -115,7 +109,6 @@ export class MenuView {
     this.setMode(settings.mode);
     this.setDifficulty(settings.difficulty);
     this.setSound(settings.sound);
-    this.setMapLayout(settings.mapLayout);
   }
 
   setMode(id) {
@@ -141,22 +134,6 @@ export class MenuView {
       ? '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Victor</span><span class="stage-bar__keys"><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></span><span>Créature</span>'
       : '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ou les flèches pour déplacer Victor</span>';
     this.powerElement.hidden = duel;
-  }
-
-  setMapLayout(layout) {
-    const full = layout === 'full';
-    document.body.dataset.mapLayout = full ? 'full' : 'windowed';
-    this.mapLayoutButton.textContent = full ? 'Fenêtré' : 'Plein écran';
-    this.mapLayoutButton.setAttribute('aria-pressed', String(full));
-    this.mapLayoutButton.setAttribute(
-      'aria-label',
-      full ? 'Passer à la carte en fenêtre' : 'Passer à la carte plein écran',
-    );
-    this.layoutButtons.forEach((button) => {
-      const active = button.dataset.stageLayout === (full ? 'full' : 'windowed');
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-pressed', String(active));
-    });
   }
 
   setDifficulty(id) {

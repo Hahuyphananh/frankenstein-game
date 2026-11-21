@@ -11,7 +11,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
   mode: 'guardian',
   difficulty: 'normal',
   sound: true,
-  mapLayout: 'full',
 });
 
 export const MODE_ORDER = Object.freeze(['guardian', 'creature']);
