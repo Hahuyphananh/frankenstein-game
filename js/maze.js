@@ -96,6 +96,74 @@ export function walkableNeighbors(maze, col, row) {
   );
 }
 
+/** Every street tile, used for the randomised opening positions. */
+export function walkableTiles(maze) {
+  const tiles = [];
+  for (let row = 0; row < maze.rows; row += 1) {
+    for (let col = 0; col < maze.columns; col += 1) {
+      if (isWalkableTile(maze, col, row)) tiles.push(Object.freeze({ col, row }));
+    }
+  }
+  return tiles;
+}
+
+function manhattan(a, b) {
+  return Math.abs(a.col - b.col) + Math.abs(a.row - b.row);
+}
+
+function sameTile(a, b) {
+  return Boolean(a && b && a.col === b.col && a.row === b.row);
+}
+
+function pickTile(pool, rng) {
+  if (!pool.length) return null;
+  const index = Math.min(pool.length - 1, Math.floor(rng() * pool.length));
+  return pool[index];
+}
+
+/**
+ * Pick a fresh corner, street and street for the three actors. The previous
+ * run's positions are excluded when alternatives exist, so Restart never
+ * opens in exactly the same arrangement twice.
+ */
+export function chooseStartPositions(maze, { rng = Math.random, previous = null } = {}) {
+  const corners = CORNER_SPAWNS.filter((tile) => isWalkableTile(maze, tile.col, tile.row));
+  const streets = walkableTiles(maze);
+
+  const freshCorners = corners.filter((tile) => !sameTile(tile, previous?.creature));
+  const creature = pickTile(freshCorners.length ? freshCorners : corners, rng) ?? CREATURE_SPAWN;
+
+  const targetPool = streets.filter(
+    (tile) =>
+      !sameTile(tile, creature) &&
+      !sameTile(tile, previous?.elizabeth) &&
+      manhattan(tile, creature) >= 10,
+  );
+  const relaxedTargets = streets.filter(
+    (tile) => !sameTile(tile, creature) && !sameTile(tile, previous?.elizabeth),
+  );
+  const elizabeth =
+    pickTile(targetPool.length ? targetPool : relaxedTargets, rng) ?? ELIZABETH_SPAWN;
+
+  const victorPool = streets.filter(
+    (tile) =>
+      !sameTile(tile, creature) &&
+      !sameTile(tile, elizabeth) &&
+      !sameTile(tile, previous?.victor) &&
+      manhattan(tile, creature) >= 6 &&
+      manhattan(tile, elizabeth) >= 5,
+  );
+  const relaxedVictors = streets.filter(
+    (tile) =>
+      !sameTile(tile, creature) &&
+      !sameTile(tile, elizabeth) &&
+      !sameTile(tile, previous?.victor),
+  );
+  const victor = pickTile(victorPool.length ? victorPool : relaxedVictors, rng) ?? PLAYER_SPAWN;
+
+  return Object.freeze({ creature, victor, elizabeth });
+}
+
 export function restoreMaze(maze, layout = MAZE_LAYOUT) {
   if (!maze || layout.length !== maze.rows) {
     throw new Error('restoreMaze: layout does not match the maze.');

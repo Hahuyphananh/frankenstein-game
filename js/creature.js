@@ -50,7 +50,7 @@ export class Creature extends GridActor {
     this.usedRespawns = new Set([`${spawn.col},${spawn.row}`]);
     this.dashFor = 0;
     this.dashCooldownFor = 0;
-    this.wallBreakAvailable = false;
+    this.wallBreakAvailable = Boolean(profile.destroyWalls);
   }
 
   reset() {
@@ -60,7 +60,7 @@ export class Creature extends GridActor {
     this.invulnerableFor = 0;
     this.dashFor = 0;
     this.speed = this.baseSpeed ?? this.profile?.speed ?? this.speed;
-    this.wallBreakAvailable = false;
+    this.wallBreakAvailable = Boolean(this.profile?.destroyWalls);
   }
 
   get invulnerable() {
@@ -89,13 +89,13 @@ export class Creature extends GridActor {
 
     this.lives -= 1;
     this.dashFor = 0;
-    this.wallBreakAvailable = false;
     this.speed = this.baseSpeed;
 
     const corner = this.nextRespawnCorner(victor);
     this.teleportTo(corner);
     this.lastRespawn = Object.freeze({ col: corner.col, row: corner.row });
     this.usedRespawns.add(`${corner.col},${corner.row}`);
+    this.wallBreakAvailable = Boolean(this.profile.destroyWalls);
     this.invalidatePathing();
     this.invulnerableFor = this.rules.respawnInvulnerability;
     return true;
@@ -156,7 +156,11 @@ export class Creature extends GridActor {
   beginDash() {
     this.dashFor = this.profile.dashDuration ?? 0.5;
     this.dashCooldownFor = this.profile.dashCooldown;
-    this.wallBreakAvailable = Boolean(this.profile.destroyWalls);
+    // A per-life wall break is armed at spawn and after a respawn, not on
+    // every dash. This keeps Hard's masonry damage bounded per run.
+    if (!this.profile.wallBreakPerLife) {
+      this.wallBreakAvailable = Boolean(this.profile.destroyWalls);
+    }
   }
 
   chooseDirection(context) {

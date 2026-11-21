@@ -44,6 +44,11 @@ export class MenuView {
     this.resumeButton = byId('btn-resume');
     this.timerElement = byId('stage-timer');
     this.timerValue = byId('stage-timer-value');
+    this.powerElement = byId('stage-power');
+    this.powerValue = byId('stage-power-value');
+    this.powerFill = byId('stage-power-fill');
+    this.wallState = byId('stage-wall-state');
+    this.powerKey = '';
     this.castPortraits = [...document.querySelectorAll('[data-cast]')];
 
     this.bind(byId);
@@ -93,11 +98,11 @@ export class MenuView {
   setMapLayout(layout) {
     const full = layout === 'full';
     document.body.dataset.mapLayout = full ? 'full' : 'windowed';
-    this.mapLayoutButton.textContent = full ? 'Windowed' : 'Fullscreen';
+    this.mapLayoutButton.textContent = full ? 'Fenêtré' : 'Plein écran';
     this.mapLayoutButton.setAttribute('aria-pressed', String(full));
     this.mapLayoutButton.setAttribute(
       'aria-label',
-      full ? 'Switch to windowed map' : 'Switch to full-screen map',
+      full ? 'Passer à la carte en fenêtre' : 'Passer à la carte plein écran',
     );
   }
 
@@ -143,7 +148,7 @@ export class MenuView {
     this.creatureLives.dataset.lives = String(remaining);
     this.creatureLives.setAttribute(
       'aria-label',
-      `Creature lives remaining: ${remaining} of ${maxLives}`,
+      `Vies restantes de la Créature : ${remaining} sur ${maxLives}`,
     );
   }
 
@@ -155,8 +160,51 @@ export class MenuView {
     );
     this.timerElement.setAttribute(
       'aria-label',
-      `Time remaining: ${formatTime(remainingSeconds)} of ${formatTime(limitSeconds)}`,
+      `Temps restant : ${formatTime(remainingSeconds)} sur ${formatTime(limitSeconds)}`,
     );
+  }
+
+  setCreaturePower({
+    cooldown = 0,
+    limit = 0,
+    dashing = false,
+    canBreakWalls = false,
+    wallBreakAvailable = false,
+    wallBreakPerLife = false,
+  } = {}) {
+    const remaining = Math.max(0, cooldown);
+    const progress = dashing
+      ? 1
+      : limit > 0
+        ? Math.max(0, Math.min(1, 1 - remaining / limit))
+        : 1;
+    const value = dashing ? 'Active' : remaining > 0.05 ? `${Math.ceil(remaining)} s` : 'Prêt';
+    const state = dashing ? 'active' : remaining > 0.05 ? 'cooling' : 'ready';
+    const wallText = wallBreakAvailable ? 'Mur : prêt' : 'Mur : utilisé';
+    const key = `${value}|${state}|${Math.round(progress * 25)}|${canBreakWalls}|${wallText}`;
+    if (key === this.powerKey) return;
+    this.powerKey = key;
+
+    this.powerValue.textContent = value;
+    this.powerFill.style.width = `${Math.round(progress * 100)}%`;
+    this.powerElement.classList.toggle('is-ready', state === 'ready');
+    this.powerElement.classList.toggle('is-cooling', state === 'cooling');
+    this.powerElement.classList.toggle('is-active', state === 'active');
+    this.powerElement.setAttribute(
+      'aria-label',
+      canBreakWalls
+        ? `Ruée de la Créature : ${value.toLowerCase()}. ${wallText}.`
+        : `Ruée de la Créature : ${value.toLowerCase()}.`,
+    );
+
+    this.wallState.hidden = !canBreakWalls;
+    if (canBreakWalls) {
+      this.wallState.textContent = wallText;
+      this.wallState.classList.toggle('is-spent', !wallBreakAvailable);
+      this.wallState.title = wallBreakPerLife
+        ? 'Un mur peut être brisé par vie en mode Difficile.'
+        : 'Disponible à la prochaine ruée.';
+    }
   }
 
   showPause() {
@@ -180,22 +228,22 @@ export class MenuView {
       this.resultEpilogue.textContent = story.epilogue ?? '';
       this.resultEpilogue.hidden = !story.epilogue;
     } else {
-      this.resultLabel.textContent = lost ? 'Time expired' : 'Experiment complete';
-      title.textContent = lost ? 'The Creature escaped.' : 'Victor wins.';
+      this.resultLabel.textContent = lost ? 'Temps écoulé' : 'Expérience terminée';
+      title.textContent = lost ? 'La Créature s’est échappée.' : 'Victor gagne.';
       copy.textContent = lost
-        ? 'Victor ran out of time. The Creature slips back into the laboratory corridors.'
-        : "All three of the Creature's lives are spent and the specimen is secured.";
+        ? 'Victor n’a plus de temps. La Créature se glisse hors des ruelles du laboratoire.'
+        : 'Les trois vies de la Créature sont épuisées et le spécimen est maîtrisé.';
       this.resultEpilogue.textContent = '';
       this.resultEpilogue.hidden = true;
     }
 
-    this.resultTimeLabel.textContent = lost ? 'Time survived' : 'Time taken';
+    this.resultTimeLabel.textContent = lost ? 'Temps survécu' : 'Temps réalisé';
     this.resultTime.textContent = formatTime(elapsedMs / 1000);
     this.resultStars.forEach((star, index) => {
       star.classList.toggle('is-earned', index < stars);
     });
-    this.resultStarsGroup.setAttribute('aria-label', `${stars} of 3 stars`);
-    this.playAgainButton.textContent = 'Restart';
+    this.resultStarsGroup.setAttribute('aria-label', `${stars} étoiles sur 3`);
+    this.playAgainButton.textContent = 'Recommencer';
     this.stageResult.hidden = false;
     window.requestAnimationFrame(() => this.playAgainButton.focus({ preventScroll: true }));
   }
@@ -206,7 +254,7 @@ export class MenuView {
 
   setSound(enabled) {
     this.soundLabels.forEach((label) => {
-      label.textContent = enabled ? 'Sound on' : 'Sound off';
+      label.textContent = enabled ? 'Son activé' : 'Son coupé';
     });
     this.soundButtons.forEach((button) => {
       button.setAttribute('aria-pressed', String(enabled));

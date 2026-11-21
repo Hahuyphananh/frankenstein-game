@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#05070a" />
-    <title>FRANKENSTEIN — Maze Arcade</title>
+    <title>FRANKENSTEIN — Jeu d’arcade</title>
     <meta
       name="description"
-      content="FRANKENSTEIN is a 2D maze arcade game built with HTML Canvas, CSS and vanilla JavaScript. One Victorian village, one Creature, and Elizabeth to protect."
+      content="FRANKENSTEIN est un jeu d’arcade en 2D réalisé avec HTML Canvas, CSS et JavaScript. Un village victorien, une Créature et Elizabeth à protéger."
     />
     <link
       rel="icon"
@@ -31,20 +31,21 @@
           aria-labelledby="game-title"
         >
           <div class="panel">
-            <div class="brand">
-              <p class="label">A Victorian village · nightfall</p>
+            <header class="brand">
+              <p class="label">Un petit projet de programmation</p>
               <h1 class="title" id="game-title"><span class="title__text">Frankenstein</span></h1>
-              <p class="tagline">The Creature is loose. Protect Elizabeth — or Justine pays the price.</p>
-            </div>
+              <p class="tagline">
+                La Créature rôde dans le village. Protégez Elizabeth avant qu’elle ne l’atteigne.
+              </p>
+            </header>
 
-            <nav class="menu" aria-label="Main menu">
+            <nav class="menu" aria-label="Menu principal">
               <button class="btn btn--play" id="btn-play" type="button">
-                <span class="btn__label">Play</span>
-                <span class="btn__meta" aria-hidden="true">Press Enter</span>
+                <span class="btn__label">Jouer</span>
               </button>
 
               <fieldset class="field">
-                <legend class="field__legend">Difficulty</legend>
+                <legend class="field__legend">Difficulté</legend>
                 <div class="segmented">
                   <label class="segmented__opt">
                     <input
@@ -53,7 +54,7 @@
                       name="difficulty"
                       value="easy"
                     />
-                    <span class="segmented__face">Easy</span>
+                    <span class="segmented__face">Facile</span>
                   </label>
                   <label class="segmented__opt">
                     <input
@@ -72,7 +73,7 @@
                       name="difficulty"
                       value="hard"
                     />
-                    <span class="segmented__face">Hard</span>
+                    <span class="segmented__face">Difficile</span>
                   </label>
                 </div>
                 <p class="field__hint" id="difficulty-hint" aria-live="polite"></p>
@@ -89,15 +90,13 @@
                   aria-pressed="true"
                 >
                   <span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-                  <span data-sound-label>Sound on</span>
+                  <span data-sound-label>Son activé</span>
                 </button>
               </div>
             </nav>
 
             <footer class="panel__footer">
-              <span>v0.8 gothic build</span>
-              <span class="panel__dot" aria-hidden="true"></span>
-              <span>Pixel cast active</span>
+              <span>Projet réalisé avec HTML Canvas, CSS et JavaScript</span>
             </footer>
           </div>
         </section>
@@ -112,29 +111,45 @@
         >
           <header class="hud">
             <div class="hud__title-wrap">
-              <p class="label">Victorian village · nightfall</p>
-              <h2 class="hud__title" id="stage-title">Protect Elizabeth</h2>
+              <p class="label">Village victorien · nuit</p>
+              <h2 class="hud__title" id="stage-title">Protéger Elizabeth</h2>
               <p class="hud__objective">
-                The Creature is hunting Elizabeth. Catch its three lives before it reaches her.
+                La Créature traque Elizabeth. Épuisez ses trois vies avant qu’elle ne l’atteigne.
               </p>
             </div>
             <div class="hud__actions">
               <div
                 class="timer"
                 id="stage-timer"
-                aria-label="Time remaining: 1:30 of 1:30"
+                aria-label="Temps restant : 1:30 sur 1:30"
               >
-                <span class="timer__label">Time</span>
+                <span class="timer__label">Temps</span>
                 <span class="timer__value" id="stage-timer-value">1:30</span>
+              </div>
+              <div
+                class="power"
+                id="stage-power"
+                role="status"
+                aria-live="off"
+                aria-label="Ruée de la Créature : prêt."
+              >
+                <span class="power__head">
+                  <span class="power__label">Ruée</span>
+                  <span class="power__value" id="stage-power-value">Prêt</span>
+                </span>
+                <span class="power__track" aria-hidden="true">
+                  <i class="power__fill" id="stage-power-fill"></i>
+                </span>
+                <span class="power__wall" id="stage-wall-state" hidden>Mur : prêt</span>
               </div>
               <div
                 class="lives"
                 id="stage-lives"
                 role="status"
                 aria-live="polite"
-                aria-label="Creature lives remaining: 3 of 3"
+                aria-label="Vies restantes de la Créature : 3 sur 3"
               >
-                <span class="lives__label">Creature</span>
+                <span class="lives__label">Créature</span>
                 <span class="lives__pips" aria-hidden="true">
                   <i class="lives__pip"></i>
                   <i class="lives__pip"></i>
@@ -148,9 +163,9 @@
                 id="btn-map-layout"
                 type="button"
                 aria-pressed="true"
-                aria-label="Switch to windowed map"
+                aria-label="Passer à la carte en fenêtre"
               >
-                Windowed
+                Fenêtré
               </button>
               <button
                 class="btn btn--ghost btn--small sound-toggle"
@@ -159,7 +174,7 @@
                 aria-pressed="true"
               >
                 <span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-                <span data-sound-label>Sound on</span>
+                <span data-sound-label>Son activé</span>
               </button>
               <button class="btn btn--ghost btn--small" id="btn-back" type="button">Menu</button>
             </div>
@@ -170,12 +185,12 @@
               <span class="stage-bar__keys">
                 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
               </span>
-              <span>or arrow keys to move Victor</span>
+              <span>ou les flèches pour déplacer Victor</span>
             </p>
             <p class="stage-bar__hint">
               <span class="stage-bar__keys"><kbd>P</kbd></span><span>pause</span>
-              <span class="stage-bar__keys"><kbd>F</kbd></span><span>map size</span>
-              <span class="stage-bar__keys"><kbd>Esc</kbd></span><span>menu</span>
+              <span class="stage-bar__keys"><kbd>F</kbd></span><span>taille de la carte</span>
+              <span class="stage-bar__keys"><kbd>Échap</kbd></span><span>menu</span>
             </p>
           </div>
 
@@ -186,24 +201,24 @@
               aria-labelledby="stage-result-title"
               aria-describedby="stage-result-copy result-epilogue"
             >
-              <p class="label" id="result-label">The Creature is caught</p>
-              <h3 class="stage-result__title" id="stage-result-title">Elizabeth is safe.</h3>
+              <p class="label" id="result-label">La Créature est capturée</p>
+              <h3 class="stage-result__title" id="stage-result-title">Elizabeth est sauve.</h3>
               <p class="stage-result__copy" id="stage-result-copy">
-                Victor catches the Creature before it can reach Elizabeth.
+                Victor capture la Créature avant qu’elle n’atteigne Elizabeth.
               </p>
               <p class="stage-result__epilogue" id="result-epilogue" hidden></p>
               <dl class="result-stats">
                 <div class="result-stat">
-                  <dt class="result-stat__label" id="result-time-label">Time taken</dt>
+                  <dt class="result-stat__label" id="result-time-label">Temps réalisé</dt>
                   <dd class="result-stat__value" id="result-time">0:00</dd>
                 </div>
                 <div class="result-stat">
-                  <dt class="result-stat__label">Rating</dt>
+                  <dt class="result-stat__label">Note</dt>
                   <dd
                     class="result-stat__value result-stars"
                     id="result-stars"
                     role="img"
-                    aria-label="0 of 3 stars"
+                    aria-label="0 étoiles sur 3"
                   >
                     <span class="star" aria-hidden="true">★</span>
                     <span class="star" aria-hidden="true">★</span>
@@ -213,7 +228,7 @@
               </dl>
               <div class="stage-result__actions">
                 <button class="btn btn--primary" id="btn-play-again" type="button">
-                  Restart
+                  Recommencer
                 </button>
                 <button class="btn btn--ghost" id="btn-result-menu" type="button">Menu</button>
               </div>
@@ -227,15 +242,15 @@
               aria-labelledby="pause-title"
               aria-describedby="pause-copy"
             >
-              <p class="label">Experiment suspended</p>
-              <h3 class="stage-result__title" id="pause-title">Paused.</h3>
+              <p class="label">Expérience suspendue</p>
+              <h3 class="stage-result__title" id="pause-title">Pause.</h3>
               <p class="stage-result__copy" id="pause-copy">
-                The timer is frozen. Elizabeth is still hurrying through the streets.
+                Le temps est figé. Elizabeth attend dans les ruelles.
               </p>
               <div class="stage-result__actions stage-result__actions--three">
-                <button class="btn btn--primary" id="btn-resume" type="button">Resume</button>
+                <button class="btn btn--primary" id="btn-resume" type="button">Reprendre</button>
                 <button class="btn btn--ghost" id="btn-pause-restart" type="button">
-                  Restart
+                  Recommencer
                 </button>
                 <button class="btn btn--ghost" id="btn-pause-menu" type="button">Menu</button>
               </div>
@@ -248,13 +263,13 @@
     <dialog class="modal" id="instructions-dialog" aria-labelledby="instructions-title">
       <div class="modal__inner">
         <header class="modal__head">
-          <p class="label">Field notes</p>
-          <h2 class="modal__title" id="instructions-title">How to protect Elizabeth</h2>
+          <p class="label">Notes de terrain</p>
+          <h2 class="modal__title" id="instructions-title">Comment protéger Elizabeth</h2>
           <button
             class="modal__close"
             id="btn-close-instructions"
             type="button"
-            aria-label="Close instructions"
+            aria-label="Fermer les instructions"
           >
             &times;
           </button>
@@ -262,102 +277,108 @@
 
         <div class="modal__body">
           <section>
-            <h3>Objective</h3>
+            <h3>Objectif</h3>
             <p>
-              The Creature has escaped into a Victorian village and is hunting Elizabeth as she
-              moves through the cobbled streets. Victor can touch it safely; each touch costs the
-              Creature one of its three lives and sends it to a different corner. Catch all three
-              before it reaches Elizabeth. The Creature can dash — every 10 seconds on Normal —
-              and on Hard each dash can shatter one wall. If it reaches Elizabeth, she dies and
-              Justine Moritz is later executed after being falsely accused of her murder. Justine
-              is not killed by the Creature. If Victor catches it first, Elizabeth survives and
-              Justine is never accused.
+              La Créature s’est échappée dans un village victorien et traque Elizabeth, qui se
+              déplace dans les ruelles pavées. Victor peut la toucher sans risque ; chaque contact
+              coûte à la Créature une de ses trois vies et l’envoie dans un autre coin. Attrapez-la
+              trois fois avant qu’elle n’atteigne Elizabeth. La Créature peut effectuer une ruée :
+              toutes les 16 secondes en Facile, 10 en Normal et 8 en Difficile. En Difficile, chaque
+              vie lui permet de briser un mur. Si elle atteint Elizabeth, Elizabeth meurt et
+              Justine Moritz est plus tard exécutée après avoir été faussement accusée de son
+              meurtre. Justine n’est pas tuée par la Créature. Si Victor l’attrape d’abord,
+              Elizabeth survit et Justine n’est jamais accusée. Chaque partie place les trois
+              personnages dans des rues différentes.
             </p>
           </section>
 
           <section>
-            <h3>Dramatis personae</h3>
-            <ul class="cast" aria-label="Village characters">
+            <h3>Personnages</h3>
+            <ul class="cast" aria-label="Personnages du village">
               <li class="cast__item">
                 <canvas class="cast__portrait" data-cast="victor" width="64" height="64" aria-hidden="true"></canvas>
                 <span class="cast__name">Victor</span>
-                <span class="cast__role">Scientist</span>
+                <span class="cast__role">Scientifique</span>
               </li>
               <li class="cast__item">
                 <canvas class="cast__portrait" data-cast="creature" width="64" height="64" aria-hidden="true"></canvas>
-                <span class="cast__name">The Creature</span>
-                <span class="cast__role">The maker's mistake</span>
+                <span class="cast__name">La Créature</span>
+                <span class="cast__role">L’erreur de son créateur</span>
               </li>
               <li class="cast__item">
                 <canvas class="cast__portrait" data-cast="justine" width="64" height="64" aria-hidden="true"></canvas>
                 <span class="cast__name">Justine</span>
-                <span class="cast__role">Ward</span>
+                <span class="cast__role">Pupille</span>
               </li>
               <li class="cast__item">
                 <canvas class="cast__portrait" data-cast="henry" width="64" height="64" aria-hidden="true"></canvas>
                 <span class="cast__name">Henry</span>
-                <span class="cast__role">Gentleman</span>
+                <span class="cast__role">Ami</span>
               </li>
               <li class="cast__item">
                 <canvas class="cast__portrait" data-cast="elizabeth" width="64" height="64" aria-hidden="true"></canvas>
                 <span class="cast__name">Elizabeth</span>
-                <span class="cast__role">Betrothed</span>
+                <span class="cast__role">Fiancée</span>
               </li>
             </ul>
           </section>
 
           <section>
-            <h3>Controls</h3>
+            <h3>Commandes</h3>
             <ul class="keys">
               <li>
                 <span class="keys__combo"
                   ><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd></span
                 >
-                <span>Move through the maze</span>
+                <span>Se déplacer dans le labyrinthe</span>
               </li>
               <li>
                 <span class="keys__combo"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
-                <span>Alternative movement</span>
+                <span>Déplacement alternatif</span>
               </li>
               <li>
                 <span class="keys__combo"><kbd>P</kbd></span>
-                <span>Pause / resume the timer</span>
+                <span>Mettre le temps en pause / reprendre</span>
               </li>
               <li>
                 <span class="keys__combo"><kbd>F</kbd></span>
-                <span>Toggle full-screen or windowed map</span>
+                <span>Basculer entre carte plein écran et fenêtre</span>
               </li>
               <li>
-                <span class="keys__combo"><kbd>Esc</kbd></span>
-                <span>Leave the maze</span>
+                <span class="keys__combo"><kbd>Échap</kbd></span>
+                <span>Quitter le labyrinthe</span>
               </li>
               <li>
-                <span class="keys__combo"><kbd>Enter</kbd></span>
-                <span>Confirm menu choices</span>
+                <span class="keys__combo"><kbd>Entrée</kbd></span>
+                <span>Valider les choix du menu</span>
               </li>
             </ul>
           </section>
 
           <section>
-            <h3>Difficulty</h3>
+            <h3>Difficulté</h3>
             <p>
-              Easy allows 120 seconds, Normal 90 and Hard 60. Faster catches earn up to three
-              stars, while every setting gives the Creature three lives and a different corner
-              after each hit. Normal's dash returns every 10 seconds; Hard's dash can break one
-              wall. Elizabeth moves slowly, wanders the looped streets and flees when the
-              Creature gets close.
+              Facile accorde 120 secondes, Normal 90 et Difficile 60. Plus vous êtes rapide, plus
+              vous gagnez d’étoiles. Chaque niveau donne trois vies à la Créature et un autre coin
+              après chaque contact. La ruée revient toutes les 10 secondes en Normal ; en Difficile,
+              un mur peut être brisé par vie. Elizabeth avance lentement, erre dans les rues et fuit
+              lorsque la Créature approche. L’intelligence de la Créature change aussi : en Facile,
+              elle avance directement vers Elizabeth sans reconnaître les chemins ; en Normal, elle
+              trouve un bon chemin en évitant un peu Victor ; en Difficile, elle cherche le chemin
+              le plus rapide tout en gardant fortement ses distances avec Victor.
             </p>
           </section>
 
           <p class="modal__note">
-            Current build: one Victorian village story level with a moving Elizabeth, looping
-            streets, Creature dash and Hard-mode wall breaks. There is no level progression yet.
+            Version actuelle : un niveau dans un village victorien, avec Elizabeth mobile, des
+            ruelles en boucle, la ruée de la Créature et le bris de murs en Difficile. Il n’y a pas
+            encore de progression entre les niveaux.
           </p>
         </div>
 
         <footer class="modal__foot">
           <button class="btn btn--primary" id="btn-close-instructions-2" type="button">
-            Understood
+            Compris
           </button>
         </footer>
       </div>
@@ -365,7 +386,7 @@
 
     <noscript>
       <p class="noscript">
-        FRANKENSTEIN needs JavaScript to run. Enable it in your browser and reload the page.
+        FRANKENSTEIN nécessite JavaScript. Activez-le dans votre navigateur, puis rechargez la page.
       </p>
     </noscript>
   </body>

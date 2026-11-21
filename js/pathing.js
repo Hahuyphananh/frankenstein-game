@@ -46,6 +46,63 @@ export function fieldDistance(field, maze, col, row) {
 }
 
 /**
+ * Dijkstra field from a goal, where entering a street near a threat costs
+ * more than a normal step. This lets Normal and Hard find the fastest route
+ * to Elizabeth that also keeps a safe distance from Victor.
+ */
+export function buildRiskField(
+  maze,
+  origin,
+  threatField,
+  { radius = 0, weight = 0 } = {},
+) {
+  const size = maze.columns * maze.rows;
+  const costs = new Float32Array(size).fill(Infinity);
+  if (!isWalkableTile(maze, origin.col, origin.row)) return costs;
+
+  const riskAt = (index) => {
+    const threatDistance = threatField[index];
+    if (threatDistance < 0) return 0;
+    const closeness = Math.max(0, radius - threatDistance + 1);
+    return closeness * closeness * weight;
+  };
+
+  const start = origin.row * maze.columns + origin.col;
+  costs[start] = 0;
+  const open = [start];
+  const settled = new Uint8Array(size);
+
+  while (open.length) {
+    let bestIndex = 0;
+    for (let index = 1; index < open.length; index += 1) {
+      if (costs[open[index]] < costs[open[bestIndex]]) bestIndex = index;
+    }
+
+    const index = open.splice(bestIndex, 1)[0];
+    if (settled[index]) continue;
+    settled[index] = 1;
+
+    const col = index % maze.columns;
+    const row = (index - col) / maze.columns;
+
+    for (const direction of CARDINALS) {
+      const nextCol = col + direction.x;
+      const nextRow = row + direction.y;
+      if (!isWalkableTile(maze, nextCol, nextRow)) continue;
+
+      const nextIndex = nextRow * maze.columns + nextCol;
+      const nextCost = costs[index] + 1 + riskAt(nextIndex);
+      if (nextCost + 1e-9 < costs[nextIndex]) {
+        costs[nextIndex] = nextCost;
+        open.push(nextIndex);
+      }
+    }
+  }
+
+  return costs;
+}
+
+/**
  * Highest distance-from-origin value reachable within `depth` steps of a
  * tile. Used to judge whether a candidate move leads to an escape route or
  * into a pocket.

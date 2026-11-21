@@ -1,7 +1,7 @@
 import { CREATURE_RULES, DIFFICULTIES, isDifficulty } from './config.js';
 import { directionForKey } from './input.js';
 import { GameLoop } from './loop.js';
-import { CORNER_SPAWNS, CREATURE_SPAWN, PLAYER_SPAWN, TILE, restoreMaze } from './maze.js';
+import { CORNER_SPAWNS, TILE, chooseStartPositions, restoreMaze } from './maze.js';
 import { MenuView } from './menu.js';
 import { Player } from './player.js';
 import { StoryCreature, StoryLevel } from './story.js';
@@ -28,6 +28,7 @@ export class Game {
     this.timer = null;
     this.displayedSecond = null;
     this.lastResult = null;
+    this.lastStarts = null;
 
     this.view = new MenuView({
       onPlay: () => this.play(),
@@ -72,6 +73,7 @@ export class Game {
     this.player.update(dt);
     this.story?.update(dt, { creature: this.creature });
     this.creature.update(dt, { victor: this.player, goal: this.story?.goal });
+    this.syncCreaturePower();
 
     // The Creature's arrival at Elizabeth resolves before a same-frame catch.
     if (this.story?.creatureReachedElizabeth(this.creature)) {
@@ -100,15 +102,17 @@ export class Game {
     this.renderer.refreshMaze();
     this.currentDifficulty = difficulty;
     this.stageStatus = 'playing';
+    const starts = chooseStartPositions(this.maze, { previous: this.lastStarts });
+    this.lastStarts = starts;
     this.player = new Player({
       maze: this.maze,
-      spawn: PLAYER_SPAWN,
+      spawn: starts.victor,
       speed: difficulty.playerSpeed,
     });
-    this.story = new StoryLevel({ maze: this.maze });
+    this.story = new StoryLevel({ maze: this.maze, elizabeth: starts.elizabeth });
     this.creature = new StoryCreature({
       maze: this.maze,
-      spawn: CREATURE_SPAWN,
+      spawn: starts.creature,
       spawnPoints: CORNER_SPAWNS,
       profile: difficulty.creature,
       rules: CREATURE_RULES,
@@ -122,6 +126,7 @@ export class Game {
     this.view.hideStageResult();
     this.view.setTimer(difficulty.timeLimit, difficulty.timeLimit);
     this.view.setCreatureLives(this.creature.lives, this.creature.maxLives);
+    this.syncCreaturePower();
     this.renderer.setPlayer(this.player);
     this.renderer.setCreature(this.creature);
     this.renderer.setStory(this.story);
@@ -131,6 +136,20 @@ export class Game {
     if (this.screen !== 'stage') return;
     this.startRun();
     this.audio.play('confirm');
+  }
+
+  /** Keep the dash meter and Hard wall-break state in the stage HUD. */
+  syncCreaturePower() {
+    const creature = this.creature;
+    if (!creature) return;
+    this.view.setCreaturePower({
+      cooldown: creature.dashCooldownRemaining,
+      limit: creature.profile.dashCooldown ?? 0,
+      dashing: creature.dashing,
+      canBreakWalls: Boolean(creature.profile.destroyWalls),
+      wallBreakAvailable: creature.wallBreakAvailable,
+      wallBreakPerLife: Boolean(creature.profile.wallBreakPerLife),
+    });
   }
 
   /** Now = timestamp; keeps the visual clock and expiry check in sync. */
@@ -186,6 +205,7 @@ export class Game {
     this.renderer.lifeLost();
     this.audio.play('hit');
     this.view.setCreatureLives(creature.lives, creature.maxLives);
+    this.syncCreaturePower();
 
     if (creature.lives === 0) this.winLevel(now);
   }

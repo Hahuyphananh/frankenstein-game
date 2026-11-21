@@ -797,6 +797,7 @@ body[data-map-layout="full"] .stage-bar {
   width: min(560px, calc(100vw - 32px));
   max-height: min(88vh, 760px);
   padding: 0;
+  overflow: hidden;
   border: 1px solid rgba(214, 179, 106, 0.25);
   border-radius: var(--radius);
   background: #070c10;
@@ -828,6 +829,12 @@ body[data-map-layout="full"] .stage-bar {
   display: flex;
   flex-direction: column;
   max-height: inherit;
+  overflow: hidden;
+}
+
+.modal__head,
+.modal__foot {
+  flex: 0 0 auto;
 }
 
 .modal__head {
@@ -874,6 +881,8 @@ body[data-map-layout="full"] .stage-bar {
 
 .modal__body {
   display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 20px;
   padding: 20px 24px 8px;
   overflow-y: auto;
@@ -995,5 +1004,288 @@ body[data-map-layout="full"] .stage-bar {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Simple, centered school-project lobby
+   -------------------------------------------------------------------------- */
+
+.screen--menu {
+  max-width: 520px;
+}
+
+.panel {
+  padding: clamp(24px, 4.6vw, 36px);
+  border: 1px solid rgba(239, 232, 214, 0.2);
+  border-radius: 8px;
+  background: #0b1115;
+  box-shadow: 0 24px 80px -42px #000;
+  text-align: center;
+  backdrop-filter: blur(7px);
+}
+
+.panel::before,
+.panel::after,
+.brand::after {
+  content: none;
+  display: none;
+}
+
+.brand .label {
+  color: rgba(214, 179, 106, 0.65);
+  font-size: 0.62rem;
+  letter-spacing: 0.13em;
+}
+
+.title {
+  margin: 12px 0 0;
+  font-size: clamp(2.4rem, 8vw, 3.7rem);
+  line-height: 0.95;
+  letter-spacing: -0.015em;
+  text-transform: none;
+}
+
+.title__text {
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.65);
+}
+
+.tagline {
+  max-width: 40ch;
+  margin: 12px auto 0;
+  color: var(--bone-dim);
+  font-family: var(--sans);
+  font-size: 0.94rem;
+  font-style: normal;
+  line-height: 1.5;
+}
+
+.menu {
+  max-width: 360px;
+  margin: 24px auto 0;
+  gap: 12px;
+}
+
+.menu__row {
+  gap: 8px;
+}
+
+.btn--play {
+  min-height: 54px;
+  justify-content: center;
+  padding: 15px 18px;
+  border-color: #e1c181;
+  background: linear-gradient(180deg, #e2c486, #c29b5d);
+  box-shadow: 0 12px 26px -18px rgba(214, 179, 106, 0.75);
+  color: #1b1307;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+}
+
+.btn--play:hover {
+  background: linear-gradient(180deg, #edd29b, #cfa86a);
+  box-shadow: 0 14px 30px -17px rgba(214, 179, 106, 0.9);
+  color: #1b1307;
+}
+
+.btn--play .btn__meta {
+  display: none;
+}
+
+.field__legend {
+  margin: 2px 0 8px;
+  text-align: center;
+}
+
+.field__hint {
+  min-height: 3.8em;
+  margin: 8px auto 0;
+  max-width: 39ch;
+  text-align: center;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.panel__footer {
+  display: block;
+  margin-top: 22px;
+  padding-top: 14px;
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.panel__dot {
+  display: none;
+}
+
+/* Keep the windowed title block from running underneath the map. */
+body[data-map-layout="windowed"] .hud__objective {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Creature power HUD
+   -------------------------------------------------------------------------- */
+
+.power {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-width: 118px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  background: rgba(214, 179, 106, 0.03);
+  transition:
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+
+.power__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.power__label {
+  color: rgba(239, 232, 214, 0.45);
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.power__value {
+  color: var(--bone);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.power__track {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(239, 232, 214, 0.1);
+}
+
+.power__fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: rgba(214, 179, 106, 0.6);
+  transition: width 0.12s linear;
+}
+
+.power.is-ready {
+  border-color: rgba(214, 179, 106, 0.4);
+  background: rgba(214, 179, 106, 0.07);
+}
+
+.power.is-ready .power__value,
+.power.is-ready .power__fill {
+  color: var(--acid);
+  background: var(--acid);
+  box-shadow: 0 0 8px rgba(214, 179, 106, 0.45);
+}
+
+.power.is-cooling .power__fill {
+  background: rgba(214, 179, 106, 0.42);
+}
+
+.power.is-active {
+  border-color: rgba(127, 183, 176, 0.6);
+  background: rgba(127, 183, 176, 0.08);
+}
+
+.power.is-active .power__value {
+  color: var(--plasma);
+}
+
+.power.is-active .power__fill {
+  background: var(--plasma);
+  box-shadow: 0 0 10px rgba(127, 183, 176, 0.6);
+}
+
+.power__wall {
+  color: rgba(214, 179, 106, 0.72);
+  font-family: var(--mono);
+  font-size: 0.46rem;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.power__wall.is-spent {
+  color: rgba(185, 74, 83, 0.82);
+}
+
+@media (max-width: 540px) {
+  .screen--menu {
+    max-width: 100%;
+  }
+
+  .panel {
+    padding: 24px 18px;
+  }
+
+  .title {
+    font-size: clamp(2.25rem, 11vw, 3rem);
+  }
+
+  .menu {
+    max-width: 100%;
+  }
+
+  .field__hint {
+    min-height: 4.6em;
+  }
+
+  .hud .sound-toggle,
+  .hud .chip {
+    display: none;
+  }
+
+  .hud .lives__label,
+  .hud .timer__label {
+    display: none;
+  }
+
+  .hud__actions {
+    gap: 4px;
+  }
+
+  .hud .power {
+    min-width: 92px;
+    padding: 5px 6px;
+    gap: 4px;
+  }
+
+  .hud .power__label,
+  .hud .power__value {
+    font-size: 0.55rem;
+  }
+
+  .hud .power__wall {
+    font-size: 0.42rem;
+    letter-spacing: 0;
+  }
+
+  #btn-map-layout {
+    width: 42px;
+    min-width: 42px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  #btn-map-layout::before {
+    content: "Carte";
+    font-size: 0.55rem;
+    letter-spacing: 0.04em;
   }
 }

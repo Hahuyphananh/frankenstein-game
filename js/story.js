@@ -7,21 +7,22 @@ import {
   isWalkableTile,
   walkableNeighbors,
 } from './maze.js';
-import { buildDistanceField, fieldDistance } from './pathing.js';
+import { buildDistanceField, buildRiskField, fieldDistance } from './pathing.js';
 
 /**
  * Story layer for the single village level.
  *
  * Elizabeth is a normal GridActor who wanders slowly and uses a BFS field
  * from the Creature to flee when it gets close. StoryCreature follows her
- * moving tile. Rendering, input, collision and the timer remain outside this
+ * moving tile, with difficulty-specific path recognition and Victor
+ * avoidance. Rendering, input, collision and the timer remain outside this
  * module.
  */
 
 export const STORY_RULES = Object.freeze({
   reachDistance: 0.64,
-  elizabethSpeed: 1.1,
-  fleeRadius: 5.5,
+  elizabethSpeed: 1.3,
+  fleeRadius: 7,
   wanderContinueChance: 0.55,
 });
 
@@ -38,31 +39,31 @@ function pick(list, rng) {
 }
 
 const JUSTINE_SAFE =
-  'Justine Moritz is never accused. She remains safe, and no execution follows.';
+  'Justine Moritz n’est jamais accusée. Elle reste saine et sauve, et aucune exécution n’a lieu.';
 
 const JUSTINE_TRAGEDY =
-  "Justine Moritz is not touched by the Creature. She is later executed after being falsely accused of Elizabeth's murder.";
+  'Justine Moritz n’est pas tuée par la Créature. Elle est plus tard exécutée après avoir été faussement accusée du meurtre d’Elizabeth.';
 
 export const STORY_OUTCOMES = Object.freeze({
   caught: Object.freeze({
     ending: 'caught',
-    label: 'The Creature is caught',
-    title: 'Elizabeth is safe.',
-    copy: 'Victor catches the Creature before it can reach Elizabeth. The village bells ring the all-clear, and the night passes without a funeral.',
+    label: 'La Créature est capturée',
+    title: 'Elizabeth est sauve.',
+    copy: 'Victor capture la Créature avant qu’elle n’atteigne Elizabeth. Les cloches du village sonnent la fin de l’alerte, et la nuit s’achève sans funérailles.',
     epilogue: JUSTINE_SAFE,
   }),
   elizabeth: Object.freeze({
     ending: 'elizabeth',
-    label: 'Tragedy in the village',
-    title: 'Elizabeth is dead.',
-    copy: 'The Creature catches Elizabeth on the cobbled streets before Victor can stop it. Victor arrives too late to save his bride.',
+    label: 'Tragédie au village',
+    title: 'Elizabeth est morte.',
+    copy: 'La Créature attrape Elizabeth dans les rues pavées avant que Victor ne puisse l’arrêter. Victor arrive trop tard pour sauver sa fiancée.',
     epilogue: JUSTINE_TRAGEDY,
   }),
   timeout: Object.freeze({
     ending: 'timeout',
-    label: 'Time expired',
-    title: 'The Creature reaches Elizabeth.',
-    copy: 'Victor runs out of time, and the Creature slips through the village to Elizabeth.',
+    label: 'Temps écoulé',
+    title: 'La Créature atteint Elizabeth.',
+    copy: 'Victor manque de temps, et la Créature se glisse à travers le village jusqu’à Elizabeth.',
     epilogue: JUSTINE_TRAGEDY,
   }),
 });
@@ -208,8 +209,10 @@ export class StoryLevel {
 }
 
 /**
- * Village Creature: follows Elizabeth's current tile, and on Hard can spend
- * one wall break per dash to open a shortcut through a stone block.
+ * Village Creature: follows Elizabeth's current tile, with a difficulty
+ * profile that controls path recognition and how strongly it avoids Victor.
+ * On Hard it can spend one wall break per life to open a shortcut through a
+ * stone block.
  */
 export class StoryCreature extends Creature {
   constructor(options) {
@@ -217,6 +220,10 @@ export class StoryCreature extends Creature {
     super(creatureOptions);
     this.goalKey = null;
     this.goalField = null;
+    this.victorKey = null;
+    this.victorField = null;
+    this.riskKey = null;
+    this.riskField = null;
     this.onWallBreak = onWallBreak;
   }
 
@@ -224,6 +231,10 @@ export class StoryCreature extends Creature {
     super.invalidatePathing();
     this.goalKey = null;
     this.goalField = null;
+    this.victorKey = null;
+    this.victorField = null;
+    this.riskKey = null;
+    this.riskField = null;
   }
 
   chooseDirection(context) {
@@ -241,34 +252,113 @@ export class StoryCreature extends Creature {
       return;
     }
 
-    const field = this.goalFieldFor(goal);
+    // Easy has no path recognition: it simply steps toward Elizabeth's
+    // current position. Normal and Hard read the maze with a BFS field.
+    if (this.profile.pathRecognition === false) {
+      this.pursueDirect(options, goal);
+      return;
+    }
+
+    const victor = context?.victor;
+    const awareness = this.profile.victorAwareness ?? 0;
+    const nearVictor =
+      victor &&
+      awareness > 0 &&
+      Math.hypot(victor.x - this.x, victor.y - this.y) <= awareness + 2;
+    const threatField = nearVictor ? this.victorFieldFor(victor) : null;
+    const field = nearVictor ? this.riskFieldFor(goal, victor) : this.goalFieldFor(goal);
+
+    // Hard and Normal refuse a step that leaves them right next to Victor
+    // when another exit exists. The risk field then finds the fastest safe
+    // route through the rest of the village.
+    let candidates = options;
+    if (threatField) {
+      const minimum = this.profile.victorMinDistance ?? 0;
+      const safer = options.filter((direction) => {
+        const distance = fieldDistance(
+          threatField,
+          this.maze,
+          this.col + direction.x,
+          this.row + direction.y,
+        );
+        return distance >= minimum;
+      });
+      if (minimum > 0 && safer.length) candidates = safer;
+    }
+
     let best = Infinity;
     const bestDirections = [];
 
-    for (const direction of options) {
-      const distance = fieldDistance(
-        field,
-        this.maze,
-        this.col + direction.x,
-        this.row + direction.y,
-      );
-      if (distance < 0) continue;
+    for (const direction of candidates) {
+      const nextCol = this.col + direction.x;
+      const nextRow = this.row + direction.y;
+      const distance = fieldDistance(field, this.maze, nextCol, nextRow);
+      if (distance < 0 || !Number.isFinite(distance)) continue;
 
       if (distance < best) {
         best = distance;
         bestDirections.length = 0;
         bestDirections.push(direction);
-      } else if (distance === best) {
+      } else if (Math.abs(distance - best) < 1e-9) {
         bestDirections.push(direction);
       }
     }
 
-    const pool = bestDirections.length ? bestDirections : options;
+    const pool = bestDirections.length ? bestDirections : candidates;
     this.direction = pool[Math.floor(this.rng() * pool.length)];
   }
 
+  /** Easy mode's deliberately simple, memoryless pursuit. */
+  pursueDirect(options, goal) {
+    let best = Infinity;
+    const bestDirections = [];
+
+    for (const direction of options) {
+      const x = this.col + direction.x + 0.5;
+      const y = this.row + direction.y + 0.5;
+      const distance = Math.hypot(goal.x - x, goal.y - y);
+      const score = distance - (this.direction?.name === direction.name ? 0.15 : 0);
+
+      if (score < best) {
+        best = score;
+        bestDirections.length = 0;
+        bestDirections.push(direction);
+      } else if (Math.abs(score - best) < 1e-9) {
+        bestDirections.push(direction);
+      }
+    }
+
+    this.direction = pick(bestDirections.length ? bestDirections : options, this.rng);
+  }
+
+  victorFieldFor(victor) {
+    const key = `${victor.col},${victor.row}`;
+    if (this.victorKey !== key || !this.victorField) {
+      this.victorField = buildDistanceField(this.maze, victor);
+      this.victorKey = key;
+    }
+    return this.victorField;
+  }
+
   /**
-   * Spend the one wall break granted by a Hard-mode dash. The closest
+   * Fastest route to Elizabeth with a cost for entering streets near Victor.
+   * The risk field is cached until either actor changes tile.
+   */
+  riskFieldFor(goal, victor) {
+    const key = `${goal.col},${goal.row}|${victor.col},${victor.row}`;
+    if (this.riskKey !== key || !this.riskField) {
+      const threat = this.victorFieldFor(victor);
+      this.riskField = buildRiskField(this.maze, goal, threat, {
+        radius: this.profile.victorAwareness,
+        weight: this.profile.victorAvoidWeight,
+      });
+      this.riskKey = key;
+    }
+    return this.riskField;
+  }
+
+  /**
+   * Spend the one wall break granted per Hard-mode life. The closest
    * breakable wall to Elizabeth wins, which keeps the shortcut purposeful.
    */
   tryBreakWall(context) {
