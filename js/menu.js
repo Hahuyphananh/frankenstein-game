@@ -117,23 +117,24 @@ export class MenuView {
   }
 
   /** The stage objective, controls and power panel follow the selected mode. */
-  setStageMode(mode) {
+  setStageMode(mode, protectedCharacter = null) {
     const duel = mode === 'creature';
+    const protectedName = protectedCharacter?.name ?? 'la personne protégée';
     this.hudLabel.textContent = duel ? 'Duel local · une seule vie' : 'Village victorien · nuit';
-    this.hudTitle.textContent = duel ? 'Duel local' : 'Protéger Elizabeth';
+    this.hudTitle.textContent = duel ? 'Duel local' : `Protéger ${protectedName}`;
     this.hudTitle.hidden = duel;
     this.hudTitleWrap.hidden = duel;
     this.hudObjective.textContent = duel
-      ? 'Vous êtes la Créature : flèches pour bouger, WASD pour Victor. Sans ruée, atteignez Elizabeth avant d’être touché.'
-      : 'La Créature traque Elizabeth. Épuisez ses trois vies avant qu’elle ne l’atteigne.';
+      ? `Vous êtes la Créature : flèches pour bouger, WASD pour Victor. Espace pour la ruée ; atteignez ${protectedName} avant d’être touché.`
+      : `La Créature traque ${protectedName}. Épuisez ses trois vies avant qu’elle ne l’atteigne.`;
     this.timerElement.hidden = duel;
     this.pauseCopy.textContent = duel
       ? 'La partie est en pause. Reprenez quand vous êtes prêt.'
-      : 'Le temps est figé. Elizabeth attend dans les ruelles.';
+      : `Le temps est figé. ${protectedName} attend dans les ruelles.`;
     this.stageMoveHint.innerHTML = duel
-      ? '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Victor</span><span class="stage-bar__keys"><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></span><span>Créature</span>'
+      ? '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Victor</span><span class="stage-bar__keys"><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></span><span>Créature</span><span class="stage-bar__keys"><kbd>Espace</kbd></span><span>ruée</span>'
       : '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ou les flèches pour déplacer Victor</span>';
-    this.powerElement.hidden = duel;
+    this.powerElement.hidden = false;
   }
 
   setDifficulty(id) {

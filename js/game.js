@@ -10,7 +10,13 @@ import {
 } from './maze.js';
 import { MenuView } from './menu.js';
 import { Player } from './player.js';
-import { DUEL_RULES, PlayerCreature, StoryCreature, StoryLevel } from './story.js';
+import {
+  DUEL_RULES,
+  PlayerCreature,
+  StoryCreature,
+  StoryLevel,
+  pickProtectedCharacter,
+} from './story.js';
 import { CountdownTimer, starsForTime } from './timer.js';
 
 /**
@@ -82,6 +88,7 @@ export class Game {
       this.player.update(dt);
       this.story?.update(dt, { creature: this.creature });
       this.creature.update(dt, { victor: this.player, goal: this.story?.goal });
+      this.syncCreaturePower();
 
       // A Creature victory takes priority in a same-frame collision.
       if (this.story?.creatureReachedElizabeth(this.creature)) {
@@ -139,6 +146,7 @@ export class Game {
     this.story = new StoryLevel({
       maze: this.maze,
       elizabeth: starts.elizabeth,
+      protectedCharacter: pickProtectedCharacter(),
       rules: mode === 'creature' ? DUEL_RULES : undefined,
     });
 
@@ -150,9 +158,6 @@ export class Game {
         profile: {
           ...difficulty.creature,
           speed: difficulty.playerSpeed,
-          dashCooldown: 0,
-          dashDuration: 0,
-          dashMultiplier: 1,
           destroyWalls: false,
           pathRecognition: false,
         },
@@ -181,7 +186,7 @@ export class Game {
 
     this.view.hidePause();
     this.view.hideStageResult();
-    this.view.setStageMode(mode);
+    this.view.setStageMode(mode, this.story.protectedCharacter);
     if (this.timer) this.view.setTimer(difficulty.timeLimit, difficulty.timeLimit);
     this.view.setCreatureLives(this.creature.lives, this.creature.maxLives);
     this.syncCreaturePower();
@@ -201,7 +206,7 @@ export class Game {
     const creature = this.creature;
     if (!creature) return;
     this.view.setCreaturePower({
-      enabled: this.mode === 'guardian',
+      enabled: Boolean(creature.profile.dashCooldown),
       cooldown: creature.dashCooldownRemaining,
       limit: creature.profile.dashCooldown ?? 0,
       dashing: creature.dashing,
@@ -435,6 +440,12 @@ export class Game {
       }
 
       if (this.mode === 'creature') {
+        if (event.code === 'Space') {
+          event.preventDefault();
+          if (this.stageStatus === 'playing') this.creature?.requestDash();
+          return;
+        }
+
         const victorDirection = wasdDirectionForKey(event.code);
         if (victorDirection) {
           event.preventDefault();

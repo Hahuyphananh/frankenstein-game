@@ -101,6 +101,22 @@ const PALETTES = Object.freeze({
     mouth: '#7a5546',
     gold: '#d1af63',
   }),
+  william: Object.freeze({
+    skin: '#e1c3a4',
+    skinShadow: '#bd9d7d',
+    hair: '#6b4a2c',
+    hairLight: '#8b643f',
+    coat: '#35536a',
+    coatLight: '#50748a',
+    coatDark: '#233a4b',
+    trousers: '#303642',
+    boots: '#111416',
+    cravat: '#e8e2d2',
+    waistcoat: '#6d5040',
+    belt: '#1b1a16',
+    gold: '#c9a85f',
+    mouth: '#704d3e',
+  }),
 });
 
 const cache = new Map();
@@ -506,6 +522,10 @@ export function drawHenry(ctx, options = {}) {
 
 export function drawElizabeth(ctx, options = {}) {
   drawSprite('elizabeth', ctx, options);
+}
+
+export function drawWilliam(ctx, options = {}) {
+  drawSprite('william', ctx, options);
 }
 
 /** Paint a crisp idle portrait into a cast canvas in the instructions. */

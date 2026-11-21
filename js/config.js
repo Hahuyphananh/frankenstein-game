@@ -26,25 +26,31 @@ export const CREATURE_RULES = Object.freeze({
   hitDistance: 0.7,
 });
 
+/** Behaviour shared by every difficulty; only speed and path recognition vary. */
+const CREATURE_BASE = Object.freeze({
+  strategy: 'evade',
+  continueChance: 0.5,
+  victorAwareness: 4,
+  victorAvoidWeight: 4,
+  victorMinDistance: 1,
+  dashCooldown: 2,
+  dashDuration: 1.2,
+  dashMultiplier: 3,
+  destroyWalls: true,
+});
+
 export const DIFFICULTIES = Object.freeze({
   easy: Object.freeze({
     id: 'easy',
     label: 'Facile',
-    playerSpeed: 5,
+    playerSpeed: 4.6,
     timeLimit: 120,
     starThresholds: Object.freeze({ three: 60, two: 95 }),
-    hint: 'Une Créature lente et simple. La première ruée attend 10 s, puis revient toutes les 10 s ; elle brise les murs sur son passage. 120 secondes et trois vies.',
+    hint: 'Une Créature lente et directe. La ruée revient toutes les 2 s et brise les murs sur son passage. 120 secondes et trois vies.',
     creature: Object.freeze({
-      strategy: 'wander',
+      ...CREATURE_BASE,
       speed: 1.4,
-      continueChance: 0.55,
-      pathRecognition: false,
-      victorAwareness: 0,
-      victorAvoidWeight: 0,
-      dashCooldown: 10,
-      dashDuration: 1.2,
-      dashMultiplier: 3,
-      destroyWalls: true,
+      pathRecognition: 0,
     }),
   }),
   normal: Object.freeze({
@@ -53,19 +59,11 @@ export const DIFFICULTIES = Object.freeze({
     playerSpeed: 5,
     timeLimit: 90,
     starThresholds: Object.freeze({ three: 40, two: 70 }),
-    hint: 'Une Créature qui reconnaît les chemins et évite un peu Victor. La première ruée attend 5 s, puis revient toutes les 5 s ; elle brise les murs sur son passage. 90 secondes et trois vies.',
+    hint: 'Une Créature qui suit le chemin le plus court sans anticiper Victor. La ruée revient toutes les 2 s et brise les murs sur son passage. 90 secondes et trois vies.',
     creature: Object.freeze({
-      strategy: 'evade',
+      ...CREATURE_BASE,
       speed: 1.7,
-      continueChance: 0.5,
-      pathRecognition: true,
-      victorAwareness: 4,
-      victorAvoidWeight: 4,
-      victorMinDistance: 1,
-      dashCooldown: 5,
-      dashDuration: 1.2,
-      dashMultiplier: 3,
-      destroyWalls: true,
+      pathRecognition: 1,
     }),
   }),
   hard: Object.freeze({
@@ -74,19 +72,11 @@ export const DIFFICULTIES = Object.freeze({
     playerSpeed: 5.6,
     timeLimit: 60,
     starThresholds: Object.freeze({ three: 25, two: 45 }),
-    hint: 'La Créature la plus rapide et la plus évasive. La première ruée attend 2 s, puis revient toutes les 2 s ; elle brise les murs sur son passage. 60 secondes et trois vies.',
+    hint: 'La Créature la plus rapide, avec le chemin le plus court et l’évitement de Victor. La ruée revient toutes les 2 s et brise les murs sur son passage. 60 secondes et trois vies.',
     creature: Object.freeze({
-      strategy: 'outwit',
+      ...CREATURE_BASE,
       speed: 1.8,
-      continueChance: 0.35,
-      pathRecognition: true,
-      victorAwareness: 7,
-      victorAvoidWeight: 10,
-      victorMinDistance: 2,
-      dashCooldown: 2,
-      dashDuration: 1.2,
-      dashMultiplier: 3,
-      destroyWalls: true,
+      pathRecognition: 2,
     }),
   }),
 });

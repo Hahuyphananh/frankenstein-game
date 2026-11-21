@@ -1,8 +1,19 @@
 import { Camera } from './camera.js';
 import { TILE } from './maze.js';
-import { drawCreature, drawElizabeth, drawVictor } from './sprites.js';
+import {
+  drawCreature,
+  drawElizabeth,
+  drawHenry,
+  drawVictor,
+  drawWilliam,
+} from './sprites.js';
 
 const TAU = Math.PI * 2;
+const PROTECTED_SPRITES = Object.freeze({
+  elizabeth: drawElizabeth,
+  henry: drawHenry,
+  william: drawWilliam,
+});
 
 /** Wall-mounted gas lamps: all are solid wall tiles beside walkable floor. */
 const LAMPS = Object.freeze([
@@ -447,7 +458,7 @@ export class StageRenderer {
       this.drawArcs();
     }
 
-    if (stage && this.story?.elizabeth) this.drawElizabethSprite();
+    if (stage && this.story?.elizabeth) this.drawProtectedPersonSprite();
     if (stage && this.creature) this.drawCreatureSprite();
     if (stage && this.player) this.drawPlayer();
     if (stage) {
@@ -542,14 +553,16 @@ export class StageRenderer {
     ctx.restore();
   }
 
-  drawElizabethSprite() {
+  drawProtectedPersonSprite() {
     const { ctx, story } = this;
-    const elizabeth = story.elizabeth;
-    const point = this.camera.toScreen(elizabeth.x, elizabeth.y);
+    const person = story.elizabeth;
+    const character = story.protectedCharacter ?? { tag: 'PROTÉGÉ', sprite: 'elizabeth' };
+    const point = this.camera.toScreen(person.x, person.y);
     const cell = this.camera.cell;
-    const direction = elizabeth.direction?.name ?? this.elizabethFacing;
+    const direction = person.direction?.name ?? this.elizabethFacing;
     this.elizabethFacing = direction;
-    const frame = elizabeth.moving ? Math.floor(this.time * 6) % 2 : 0;
+    const frame = person.moving ? Math.floor(this.time * 6) % 2 : 0;
+    const drawPerson = PROTECTED_SPRITES[character.sprite] ?? drawElizabeth;
     const pulse = this.animate ? 0.5 + 0.5 * Math.sin(this.time * 2.6) : 0.7;
 
     ctx.save();
@@ -565,7 +578,7 @@ export class StageRenderer {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    drawElizabeth(ctx, {
+    drawPerson(ctx, {
       x: point.x,
       y: point.y,
       cell,
@@ -577,7 +590,7 @@ export class StageRenderer {
       ctx.font = `${Math.max(6, Math.round(cell * 0.17))}px ui-monospace, monospace`;
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255, 222, 193, 0.94)';
-      ctx.fillText('ELIZABETH', point.x, point.y - cell * 0.88);
+      ctx.fillText(character.tag ?? 'PROTÉGÉ', point.x, point.y - cell * 0.88);
     }
     ctx.restore();
   }

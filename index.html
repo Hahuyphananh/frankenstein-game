@@ -7,7 +7,7 @@
     <title>Village victorien — Jeu d’arcade</title>
     <meta
       name="description"
-      content="FRANKENSTEIN est un jeu d’arcade en 2D réalisé avec HTML Canvas, CSS et JavaScript. Un village victorien, une Créature et Elizabeth à protéger."
+      content="FRANKENSTEIN est un jeu d’arcade en 2D réalisé avec HTML Canvas, CSS et JavaScript. Un village victorien, une Créature et une personne à protéger."
     />
     <link
       rel="icon"
@@ -47,7 +47,7 @@
                       value="guardian"
                       checked
                     />
-                    <span class="segmented__face">Protéger Elizabeth</span>
+                    <span class="segmented__face">Protéger un proche</span>
                   </label>
                   <label class="segmented__opt">
                     <input
@@ -111,9 +111,6 @@
               </div>
             </nav>
 
-            <footer class="panel__footer">
-              <span>Projet réalisé avec HTML Canvas, CSS et JavaScript</span>
-            </footer>
           </div>
         </section>
 
@@ -128,9 +125,9 @@
           <header class="hud">
             <div class="hud__title-wrap">
               <p class="label" id="hud-mode-label">Village victorien · nuit</p>
-              <h2 class="hud__title" id="stage-title">Protéger Elizabeth</h2>
+              <h2 class="hud__title" id="stage-title">Protection</h2>
               <p class="hud__objective" id="stage-objective">
-                La Créature traque Elizabeth. Épuisez ses trois vies avant qu’elle ne l’atteigne.
+                La Créature traque la personne protégée. Épuisez ses trois vies avant qu’elle ne l’atteigne.
               </p>
             </div>
             <div class="hud__actions">
@@ -208,9 +205,9 @@
               aria-describedby="stage-result-copy result-epilogue"
             >
               <p class="label" id="result-label">La Créature est capturée</p>
-              <h3 class="stage-result__title" id="stage-result-title">Elizabeth est sauve.</h3>
+              <h3 class="stage-result__title" id="stage-result-title">La personne protégée est sauve.</h3>
               <p class="stage-result__copy" id="stage-result-copy">
-                Victor capture la Créature avant qu’elle n’atteigne Elizabeth.
+                Victor capture la Créature avant qu’elle n’atteigne la personne protégée.
               </p>
               <p class="stage-result__epilogue" id="result-epilogue" hidden></p>
               <dl class="result-stats">
@@ -251,7 +248,7 @@
               <p class="label">Expérience suspendue</p>
               <h3 class="stage-result__title" id="pause-title">Pause.</h3>
               <p class="stage-result__copy" id="pause-copy">
-                Le temps est figé. Elizabeth attend dans les ruelles.
+                Le temps est figé. La personne protégée attend dans les ruelles.
               </p>
               <div class="stage-result__actions stage-result__actions--three">
                 <button class="btn btn--primary" id="btn-resume" type="button">Reprendre</button>
@@ -270,7 +267,7 @@
       <div class="modal__inner">
         <header class="modal__head">
           <p class="label">Notes de terrain</p>
-          <h2 class="modal__title" id="instructions-title">Comment protéger Elizabeth</h2>
+          <h2 class="modal__title" id="instructions-title">Comment protéger un proche</h2>
           <button
             class="modal__close"
             id="btn-close-instructions"
@@ -286,31 +283,31 @@
             <h3>Objectif</h3>
             <p>
               Dans le mode Protection, la Créature s’est échappée dans un village victorien et
-              traque Elizabeth, qui se déplace dans les ruelles pavées. Victor peut la toucher sans
-              risque ; chaque contact coûte à la Créature une de ses trois vies et l’envoie dans un
-              autre coin. Attrapez-la trois fois avant qu’elle n’atteigne Elizabeth. La Créature
-              peut effectuer une ruée : la première recharge attend 10 secondes en Facile, 5 en
-              Normal et 2 en Difficile, puis revient au même rythme. Pendant une ruée, elle brise
-              tous les murs qu’elle traverse, dans les trois difficultés. Si elle atteint Elizabeth, Elizabeth meurt et Justine Moritz est plus
-              tard exécutée après avoir été faussement accusée de son meurtre. Justine n’est pas
-              tuée par la Créature. Si Victor l’attrape d’abord, Elizabeth survit et Justine n’est
-              jamais accusée. Chaque partie place les trois personnages dans des rues différentes.
+              traque la personne protégée, qui se déplace dans les ruelles pavées. Chaque partie
+              choisit au hasard Elizabeth, Henri Clerval ou William Frankenstein. Victor peut la
+              toucher sans risque ; chaque contact coûte à la Créature une de ses trois vies et
+              l’envoie dans un autre coin. Attrapez-la trois fois avant qu’elle n’atteigne la
+              personne protégée. La Créature peut effectuer une ruée : sa recharge est de
+              2 secondes dans toutes les difficultés. Pendant une ruée, elle brise tous les murs
+              qu’elle traverse. Si elle atteint la personne protégée, celle-ci meurt ; si Victor
+              l’attrape d’abord, elle survit. Chaque partie place les trois personnages dans des
+              rues différentes.
             </p>
           </section>
 
           <section>
             <h3>Modes</h3>
             <p>
-              <strong>Protéger Elizabeth</strong> est le mode solo : vous contrôlez Victor avec
+              <strong>Protéger un proche</strong> est le mode solo : vous contrôlez Victor avec
               WASD ou les flèches, et la Créature est dirigée par l’intelligence du jeu.
             </p>
             <p>
               <strong>2 joueurs</strong> est un duel local à deux sur le même clavier : le
               joueur 1 contrôle Victor avec WASD, le joueur 2 contrôle la Créature avec les flèches.
-              La Créature n’a qu’une seule vie, ne peut pas effectuer de ruée et se déplace à la même
-              vitesse que Victor. Elle commence dans un coin proche d’Elizabeth, tandis que Victor
-              démarre plus loin. Atteignez Elizabeth pour gagner ; si Victor vous touche, Victor
-              gagne.
+              La Créature n’a qu’une seule vie, se déplace à la même vitesse que Victor et peut
+              déclencher une ruée avec Espace, sans briser les murs. Elle commence dans un coin
+              proche de la personne protégée, tandis que Victor démarre plus loin. Atteignez-la
+              pour gagner ; si Victor vous touche, Victor gagne.
             </p>
           </section>
 
@@ -328,19 +325,19 @@
                 <span class="cast__role">L’erreur de son créateur</span>
               </li>
               <li class="cast__item">
-                <canvas class="cast__portrait" data-cast="justine" width="64" height="64" aria-hidden="true"></canvas>
-                <span class="cast__name">Justine</span>
-                <span class="cast__role">Pupille</span>
-              </li>
-              <li class="cast__item">
                 <canvas class="cast__portrait" data-cast="henry" width="64" height="64" aria-hidden="true"></canvas>
-                <span class="cast__name">Henry</span>
-                <span class="cast__role">Ami</span>
+                <span class="cast__name">Henri Clerval</span>
+                <span class="cast__role">Ami de Victor</span>
               </li>
               <li class="cast__item">
                 <canvas class="cast__portrait" data-cast="elizabeth" width="64" height="64" aria-hidden="true"></canvas>
                 <span class="cast__name">Elizabeth</span>
-                <span class="cast__role">Fiancée</span>
+                <span class="cast__role">Fiancée de Victor</span>
+              </li>
+              <li class="cast__item">
+                <canvas class="cast__portrait" data-cast="william" width="64" height="64" aria-hidden="true"></canvas>
+                <span class="cast__name">William</span>
+                <span class="cast__role">Jeune frère de Victor</span>
               </li>
             </ul>
           </section>
@@ -359,6 +356,10 @@
               <li>
                 <span class="keys__combo"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
                 <span>Déplacer Victor dans les deux modes.</span>
+              </li>
+              <li>
+                <span class="keys__combo"><kbd>Espace</kbd></span>
+                <span>Mode 2 joueurs : déclencher la ruée de la Créature.</span>
               </li>
               <li>
                 <span class="keys__combo"><kbd>P</kbd></span>
@@ -380,25 +381,25 @@
             <p>
               En mode Protection, Facile accorde 120 secondes, Normal 90 et Difficile 60. Plus vous
               êtes rapide, plus vous gagnez d’étoiles. Chaque niveau donne trois vies à la
-              Créature et un autre coin après chaque contact. La première recharge de ruée attend
-              10 secondes en Facile, 5 en Normal et 2 en Difficile ; ensuite elle revient au même
-              rythme et brise tous les murs rencontrés. Elizabeth avance à 3,2 cases/s en Protection,
-              erre dans les rues et fuit lorsque la Créature approche. L’intelligence de la Créature
-              change aussi : en Facile, elle avance directement vers Elizabeth sans reconnaître les
-              chemins ; en Normal, elle trouve un bon chemin en évitant un peu Victor ; en Difficile,
-              elle cherche le chemin le plus rapide tout en gardant fortement ses distances avec
-              Victor. Sa vitesse de base augmente légèrement avec la difficulté, mais reste bien
-              inférieure à celle de Victor. En mode 2 joueurs, Elizabeth avance à 1,8 case/s,
-              les deux personnages vont à la même vitesse, la Créature n’a qu’une vie, aucune ruée
-              et aucun chronomètre.
+              Créature et un autre coin après chaque contact. La recharge de ruée est de
+              2 secondes dans toutes les difficultés ; elle revient au même rythme et brise tous
+              les murs rencontrés. La personne protégée avance à 3,2 cases/s en Protection, erre
+              dans les rues et fuit lorsque la Créature approche. L’intelligence de la Créature
+              change aussi : en Facile, elle avance directement vers la personne protégée sans
+              reconnaître les chemins ; en Normal, elle suit le chemin le plus court ; en Difficile,
+              elle ajoute l’évitement de Victor à ce même chemin. Sa vitesse de base augmente
+              légèrement avec la difficulté, mais reste bien inférieure à celle de Victor. En mode
+              2 joueurs, la personne protégée avance à 1,8 case/s, les deux personnages vont à la
+              même vitesse, la Créature n’a qu’une vie, une ruée manuelle avec Espace (sans bris
+              de murs) et aucun chronomètre.
             </p>
           </section>
 
           <p class="modal__note">
-            Version actuelle : un niveau dans un village victorien, avec Elizabeth mobile, des
-            ruelles en boucle, la ruée de la Créature, le bris de murs dans toutes les difficultés
-            et un duel local où vous incarnez la Créature. Il n’y a pas encore de progression entre
-            les niveaux.
+            Version actuelle : un niveau dans un village victorien, avec une personne protégée
+            mobile choisie au hasard, des ruelles en boucle, la ruée de la Créature, le bris de
+            murs dans toutes les difficultés et un duel local où vous incarnez la Créature. Il n’y
+            a pas encore de progression entre les niveaux.
           </p>
         </div>
 

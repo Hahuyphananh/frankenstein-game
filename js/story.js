@@ -18,11 +18,11 @@ import {
 /**
  * Story layer for the single village level.
  *
- * Elizabeth is a normal GridActor who wanders slowly and uses a BFS field
- * from the Creature to flee when it gets close. StoryCreature follows her
- * moving tile, with difficulty-specific path recognition and Victor
- * avoidance. Rendering, input, collision and the timer remain outside this
- * module.
+ * The protected person is a normal GridActor who wanders slowly and uses a
+ * BFS field from the Creature to flee when it gets close. StoryCreature
+ * follows that moving tile, with difficulty-specific path recognition and
+ * Victor avoidance. Rendering, input, collision and the timer remain outside
+ * this module.
  */
 
 export const STORY_RULES = Object.freeze({
@@ -32,7 +32,7 @@ export const STORY_RULES = Object.freeze({
   wanderContinueChance: 0.55,
 });
 
-/** Elizabeth is slower in the local duel so the no-dash Creature can catch her. */
+/** Elizabeth is slower in the local duel, where the Creature has a manual dash. */
 export const DUEL_RULES = Object.freeze({
   ...STORY_RULES,
   elizabethSpeed: 1.8,
@@ -50,58 +50,99 @@ function pick(list, rng) {
   return list[Math.min(list.length - 1, Math.floor(rng() * list.length))];
 }
 
-const JUSTINE_SAFE =
-  'Justine Moritz n’est jamais accusée. Elle reste saine et sauve, et aucune exécution n’a lieu.';
-
-const JUSTINE_TRAGEDY =
-  'Justine Moritz n’est pas tuée par la Créature. Elle est plus tard exécutée après avoir été faussement accusée du meurtre d’Elizabeth.';
-
-export const STORY_OUTCOMES = Object.freeze({
-  caught: Object.freeze({
-    ending: 'caught',
-    label: 'La Créature est capturée',
-    title: 'Elizabeth est sauve.',
-    copy: 'Victor capture la Créature avant qu’elle n’atteigne Elizabeth. Les cloches du village sonnent la fin de l’alerte, et la nuit s’achève sans funérailles.',
-    epilogue: JUSTINE_SAFE,
-  }),
+export const PROTECTED_CHARACTERS = Object.freeze({
   elizabeth: Object.freeze({
-    ending: 'elizabeth',
-    label: 'Tragédie au village',
-    title: 'Elizabeth est morte.',
-    copy: 'La Créature attrape Elizabeth dans les rues pavées avant que Victor ne puisse l’arrêter. Victor arrive trop tard pour sauver sa fiancée.',
-    epilogue: JUSTINE_TRAGEDY,
+    id: 'elizabeth',
+    name: 'Elizabeth',
+    tag: 'ELIZABETH',
+    role: 'Fiancée de Victor',
+    sprite: 'elizabeth',
+    feminine: true,
+    safeLine: 'Elizabeth retrouve Victor, saine et sauve.',
+    lossLine: 'Victor arrive trop tard pour sauver sa fiancée.',
   }),
-  creatureWin: Object.freeze({
-    ending: 'creatureWin',
-    label: 'La Créature gagne',
-    title: 'Elizabeth est morte.',
-    copy: 'Vous atteignez Elizabeth avant que Victor ne puisse vous intercepter. La tragédie annoncée par le roman s’accomplit dans les ruelles du village.',
-    epilogue: JUSTINE_TRAGEDY,
+  henry: Object.freeze({
+    id: 'henry',
+    name: 'Henri Clerval',
+    tag: 'HENRI',
+    role: 'Ami de Victor',
+    sprite: 'henry',
+    feminine: false,
+    safeLine: 'Henri Clerval retrouve Victor, sain et sauf.',
+    lossLine: 'Victor perd son ami le plus cher.',
   }),
-  creatureCaught: Object.freeze({
-    ending: 'creatureCaught',
-    label: 'Victor gagne',
-    title: 'Elizabeth est sauve.',
-    copy: 'Victor intercepte la Créature avant qu’elle n’atteigne Elizabeth. Une seule vie aura suffi à Victor pour mettre fin à la traque.',
-    epilogue: JUSTINE_SAFE,
-  }),
-  creatureTimeout: Object.freeze({
-    ending: 'creatureTimeout',
-    label: 'Temps écoulé',
-    title: 'Elizabeth est sauve.',
-    copy: 'Le temps s’épuise avant que la Créature n’atteigne Elizabeth. Victor remporte le duel et ramène Elizabeth au village.',
-    epilogue: JUSTINE_SAFE,
-  }),
-  timeout: Object.freeze({
-    ending: 'timeout',
-    label: 'Temps écoulé',
-    title: 'La Créature atteint Elizabeth.',
-    copy: 'Victor manque de temps, et la Créature se glisse à travers le village jusqu’à Elizabeth.',
-    epilogue: JUSTINE_TRAGEDY,
+  william: Object.freeze({
+    id: 'william',
+    name: 'William Frankenstein',
+    tag: 'WILLIAM',
+    role: 'Jeune frère de Victor',
+    sprite: 'william',
+    feminine: false,
+    safeLine: 'Le jeune William retourne auprès de sa famille.',
+    lossLine: 'La famille Frankenstein est dévastée.',
   }),
 });
 
-/** Elizabeth's small, cautious movement loop. */
+const PROTECTED_LIST = Object.freeze(Object.values(PROTECTED_CHARACTERS));
+
+/** Pick the person to protect for a fresh run. */
+export function pickProtectedCharacter(rng = Math.random) {
+  return PROTECTED_LIST[Math.floor(rng() * PROTECTED_LIST.length)] ?? PROTECTED_CHARACTERS.elizabeth;
+}
+
+function storyOutcome(ending, character) {
+  const name = character.name;
+  const safeWord = character.feminine ? 'sauve' : 'sauvé';
+  const deadWord = character.feminine ? 'morte' : 'mort';
+  const safeTitle = `${name} est ${safeWord}.`;
+  const deadTitle = `${name} est ${deadWord}.`;
+  const safeEpilogue = `Le village retrouve son calme. ${character.safeLine}`;
+  const lossEpilogue = `Le village est en deuil. ${character.lossLine}`;
+
+  const outcomes = {
+    caught: {
+      label: 'La Créature est capturée',
+      title: safeTitle,
+      copy: `Victor capture la Créature avant qu’elle n’atteigne ${name}. Les cloches du village sonnent la fin de l’alerte, et la nuit s’achève sans funérailles.`,
+      epilogue: safeEpilogue,
+    },
+    elizabeth: {
+      label: 'Tragédie au village',
+      title: deadTitle,
+      copy: `La Créature attrape ${name} dans les rues pavées avant que Victor ne puisse l’arrêter. ${character.lossLine}`,
+      epilogue: lossEpilogue,
+    },
+    creatureWin: {
+      label: 'La Créature gagne',
+      title: deadTitle,
+      copy: `Vous atteignez ${name} avant que Victor ne puisse vous intercepter. ${character.lossLine}`,
+      epilogue: lossEpilogue,
+    },
+    creatureCaught: {
+      label: 'Victor gagne',
+      title: safeTitle,
+      copy: `Victor intercepte la Créature avant qu’elle n’atteigne ${name}. Une seule vie aura suffi à Victor pour mettre fin à la traque.`,
+      epilogue: safeEpilogue,
+    },
+    creatureTimeout: {
+      label: 'Temps écoulé',
+      title: safeTitle,
+      copy: `Le temps s’épuise avant que la Créature n’atteigne ${name}. Victor remporte le duel et ramène ${name} au village.`,
+      epilogue: safeEpilogue,
+    },
+    timeout: {
+      label: 'Temps écoulé',
+      title: `La Créature atteint ${name}.`,
+      copy: `Victor manque de temps, et la Créature se glisse à travers le village jusqu’à ${name}. ${character.lossLine}`,
+      epilogue: lossEpilogue,
+    },
+  };
+
+  const outcome = outcomes[ending];
+  return outcome ? Object.freeze({ ending, ...outcome }) : null;
+}
+
+/** The protected person's small, cautious movement loop. */
 export class Elizabeth extends GridActor {
   constructor({ maze, spawn = ELIZABETH_SPAWN, speed = STORY_RULES.elizabethSpeed, rng = Math.random }) {
     super({ maze, spawn, speed });
@@ -130,7 +171,7 @@ export class Elizabeth extends GridActor {
     return Math.hypot(actor.x - this.x, actor.y - this.y);
   }
 
-  /** Pick the legal move that puts the most walkable distance behind her. */
+  /** Pick the legal move that puts the most walkable distance behind the person. */
   flee(options, creature) {
     const field = this.fieldFor(creature);
     let best = -Infinity;
@@ -191,13 +232,26 @@ export class Elizabeth extends GridActor {
 }
 
 export class StoryLevel {
-  constructor({ maze, elizabeth = ELIZABETH_SPAWN, rules = STORY_RULES, rng = Math.random } = {}) {
+  constructor({
+    maze,
+    elizabeth = ELIZABETH_SPAWN,
+    protectedCharacter = pickProtectedCharacter(),
+    rules = STORY_RULES,
+    rng = Math.random,
+  } = {}) {
     if (!maze) throw new Error('StoryLevel: maze is required.');
     if (!isWalkableTile(maze, elizabeth.col, elizabeth.row)) {
-      throw new Error('StoryLevel: Elizabeth must start on a walkable tile.');
+      throw new Error('StoryLevel: protected person must start on a walkable tile.');
     }
 
+    const character =
+      typeof protectedCharacter === 'string'
+        ? PROTECTED_CHARACTERS[protectedCharacter]
+        : protectedCharacter;
+    if (!character) throw new Error('StoryLevel: unknown protected character.');
+
     this.rules = rules;
+    this.protectedCharacter = character;
     this.elizabeth = new Elizabeth({
       maze,
       spawn: elizabeth,
@@ -210,6 +264,10 @@ export class StoryLevel {
 
   get goal() {
     return this.elizabeth;
+  }
+
+  get protectedName() {
+    return this.protectedCharacter.name;
   }
 
   update(dt, context) {
@@ -232,7 +290,7 @@ export class StoryLevel {
   resolve(ending) {
     if (this.resolved) return this.outcome;
 
-    const outcome = STORY_OUTCOMES[ending];
+    const outcome = storyOutcome(ending, this.protectedCharacter);
     if (!outcome) throw new Error(`StoryLevel: unknown ending "${ending}".`);
 
     this.outcome = outcome;
@@ -295,15 +353,18 @@ export class StoryCreature extends Creature {
     }
 
     // Easy has no path recognition: it simply steps toward Elizabeth's
-    // current position. Normal and Hard read the maze with a BFS field.
-    if (this.profile.pathRecognition === false) {
+    // current position. Normal reads the maze with a BFS field. Hard adds
+    // Victor risk on top of that same shortest-path search.
+    if (!this.profile.pathRecognition) {
       this.pursueDirect(options, goal);
       return;
     }
 
     const victor = context?.victor;
-    const awareness = this.profile.victorAwareness ?? 0;
+    const riskAware = this.profile.pathRecognition >= 2;
+    const awareness = riskAware ? (this.profile.victorAwareness ?? 0) : 0;
     const nearVictor =
+      riskAware &&
       victor &&
       awareness > 0 &&
       Math.hypot(victor.x - this.x, victor.y - this.y) <= awareness + 2;
@@ -480,11 +541,32 @@ export class PlayerCreature extends StoryCreature {
   constructor(options) {
     super(options);
     this.nextDirection = null;
+    this.dashCooldownFor = 0;
   }
 
   reset() {
     super.reset();
     this.nextDirection = null;
+    this.dashCooldownFor = 0;
+  }
+
+  /** The duel dash is manual: Space starts it, never the automatic AI loop. */
+  canDash() {
+    return false;
+  }
+
+  requestDash() {
+    if (
+      !(this.profile?.dashCooldown > 0) ||
+      !(this.profile?.dashDuration > 0) ||
+      this.dashFor > 0 ||
+      this.dashCooldownFor > 0
+    ) {
+      return false;
+    }
+
+    this.beginDash();
+    return true;
   }
 
   requestDirection(nameOrDirection) {
