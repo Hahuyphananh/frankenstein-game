@@ -1,0 +1,240 @@
+/* ==========================================================================
+   FRANKENSTEIN — base layer
+   Design tokens, reset, app layers and shared primitives.
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  --ink: #040507;
+  --ink-2: #090d10;
+  --bone: #ece3cf;
+  --bone-dim: #aaa18f;
+  --acid: #d6b36a;
+  --plasma: #7fb7b0;
+  --blood: #b94a53;
+
+  --line: rgba(239, 232, 214, 0.14);
+  --line-strong: rgba(239, 232, 214, 0.28);
+
+  --serif: "Bodoni MT", Didot, "Playfair Display", Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --radius: 2px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--ink);
+  color: var(--bone);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* --------------------------------------------------------------------------
+   App layers
+   -------------------------------------------------------------------------- */
+
+.app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.app__canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.app__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 65% at 50% 0%, rgba(214, 179, 106, 0.055), transparent 62%),
+    radial-gradient(
+      120% 90% at 50% 45%,
+      transparent 34%,
+      rgba(2, 3, 5, 0.62) 80%,
+      rgba(2, 3, 5, 0.95) 100%
+    );
+}
+
+.app__scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  mix-blend-mode: soft-light;
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(236, 227, 207, 0.045) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+/* --------------------------------------------------------------------------
+   Shell & screens
+   -------------------------------------------------------------------------- */
+
+.shell {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: clamp(20px, 5vh, 56px) clamp(16px, 4vw, 44px);
+}
+
+.screen {
+  width: 100%;
+  animation: screen-in 0.5s var(--ease) both;
+}
+
+.screen:focus {
+  outline: none;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Typography primitives
+   -------------------------------------------------------------------------- */
+
+.label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(239, 232, 214, 0.5);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 24px;
+  padding: 4px 6px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius);
+  background: rgba(239, 232, 214, 0.04);
+  color: var(--bone);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 14px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: rgba(239, 232, 214, 0.02);
+  color: var(--bone);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    transform 0.12s var(--ease);
+}
+
+.btn:hover {
+  border-color: rgba(214, 179, 106, 0.6);
+  background: rgba(214, 179, 106, 0.06);
+  color: var(--acid);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--acid);
+  outline-offset: 3px;
+}
+
+.btn--primary {
+  border-color: rgba(214, 179, 106, 0.55);
+  background: rgba(214, 179, 106, 0.1);
+  color: var(--acid);
+}
+
+.btn--primary:hover {
+  background: rgba(214, 179, 106, 0.16);
+}
+
+.btn--small {
+  min-height: 40px;
+  padding: 10px 12px;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+}
+
+.btn__meta {
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  color: rgba(239, 232, 214, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
