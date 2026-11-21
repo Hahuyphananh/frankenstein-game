@@ -1,10 +1,10 @@
 import { CREATURE_RULES, DIFFICULTIES, isDifficulty } from './config.js';
 import { directionForKey } from './input.js';
 import { GameLoop } from './loop.js';
-import { CREATURE_SPAWN, PLAYER_SPAWN } from './maze.js';
+import { CORNER_SPAWNS, CREATURE_SPAWN, PLAYER_SPAWN, TILE, restoreMaze } from './maze.js';
 import { MenuView } from './menu.js';
 import { Player } from './player.js';
-import { StoryCreature, StoryLevel, WILLIAM_TILE } from './story.js';
+import { StoryCreature, StoryLevel } from './story.js';
 import { CountdownTimer, starsForTime } from './timer.js';
 
 /**
@@ -36,6 +36,7 @@ export class Game {
       onResume: () => this.resume(),
       onDifficulty: (id) => this.setDifficulty(id),
       onSound: () => this.toggleSound(),
+      onMapLayout: () => this.toggleMapLayout(),
       onInstructions: () => this.openInstructions(),
       onInstructionsClosed: () => this.audio.play('close'),
     });
@@ -48,6 +49,7 @@ export class Game {
 
   init() {
     this.view.applySettings(this.settings);
+    this.renderer.setMapLayout(this.settings.mapLayout);
     this.view.showScreen('menu');
     this.renderer.setScreen('menu');
     this.keyboard.onKeyDown((event) => this.handleKey(event));
@@ -68,11 +70,12 @@ export class Game {
     }
 
     this.player.update(dt);
+    this.story?.update(dt, { creature: this.creature });
     this.creature.update(dt, { victor: this.player, goal: this.story?.goal });
 
-    // The Creature's arrival at William resolves before a same-frame catch.
-    if (this.story?.creatureReachedWilliam(this.creature)) {
-      this.loseLevel(now, 'william');
+    // The Creature's arrival at Elizabeth resolves before a same-frame catch.
+    if (this.story?.creatureReachedElizabeth(this.creature)) {
+      this.loseLevel(now, 'elizabeth');
       return;
     }
 
@@ -93,6 +96,8 @@ export class Game {
   startRun() {
     const difficulty = DIFFICULTIES[this.settings.difficulty] ?? DIFFICULTIES.normal;
 
+    restoreMaze(this.maze);
+    this.renderer.refreshMaze();
     this.currentDifficulty = difficulty;
     this.stageStatus = 'playing';
     this.player = new Player({
@@ -100,12 +105,14 @@ export class Game {
       spawn: PLAYER_SPAWN,
       speed: difficulty.playerSpeed,
     });
-    this.story = new StoryLevel({ maze: this.maze, william: WILLIAM_TILE });
+    this.story = new StoryLevel({ maze: this.maze });
     this.creature = new StoryCreature({
       maze: this.maze,
       spawn: CREATURE_SPAWN,
+      spawnPoints: CORNER_SPAWNS,
       profile: difficulty.creature,
       rules: CREATURE_RULES,
+      onWallBreak: (wall) => this.wallBroken(wall),
     });
     this.timer = new CountdownTimer({ limitSeconds: difficulty.timeLimit });
     this.timer.start(performance.now());
@@ -172,7 +179,7 @@ export class Game {
 
     const hitX = creature.x;
     const hitY = creature.y;
-    if (!creature.hit()) return;
+    if (!creature.hit(this.player)) return;
 
     const final = creature.lives === 0;
     this.renderer.catchEffect(hitX, hitY, { final });
@@ -229,6 +236,17 @@ export class Game {
   freezeActors() {
     if (this.player) this.player.moving = false;
     if (this.creature) this.creature.moving = false;
+    if (this.story?.elizabeth) this.story.elizabeth.moving = false;
+  }
+
+  /** Hard-mode dash shattered a wall; refresh terrain and all path caches. */
+  wallBroken(wall) {
+    this.maze.tiles[wall.row][wall.col] = TILE.EMPTY;
+    this.renderer.refreshMaze();
+    this.renderer.wallBreakEffect(wall.col, wall.row);
+    this.creature?.invalidatePathing();
+    this.story?.invalidatePathing();
+    this.audio.play('shatter');
   }
 
   backToMenu() {
@@ -268,6 +286,16 @@ export class Game {
     if (this.settings.sound) this.audio.play('toggle');
   }
 
+  /** Full-screen immersive map by default; the button switches to windowed. */
+  toggleMapLayout() {
+    const layout = this.settings.mapLayout === 'full' ? 'windowed' : 'full';
+    this.settings.mapLayout = layout;
+    this.view.setMapLayout(layout);
+    this.renderer.setMapLayout(layout);
+    this.persist(this.settings);
+    this.audio.play('move');
+  }
+
   openInstructions() {
     this.audio.play('open');
     this.view.openInstructions();
@@ -281,6 +309,12 @@ export class Game {
       if (event.code === 'KeyP') {
         event.preventDefault();
         this.togglePause();
+        return;
+      }
+
+      if (event.code === 'KeyF') {
+        event.preventDefault();
+        this.toggleMapLayout();
         return;
       }
 

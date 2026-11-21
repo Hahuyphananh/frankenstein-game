@@ -1,18 +1,19 @@
 import { Camera } from './camera.js';
 import { TILE } from './maze.js';
-import { drawCreature, drawVictor, drawWilliam } from './sprites.js';
+import { drawCreature, drawElizabeth, drawVictor } from './sprites.js';
 
 const TAU = Math.PI * 2;
 
 /** Wall-mounted gas lamps: all are solid wall tiles beside walkable floor. */
 const LAMPS = Object.freeze([
-  { col: 10, row: 1, phase: 0.2 },
-  { col: 4, row: 5, phase: 1.4 },
-  { col: 16, row: 5, phase: 2.6 },
-  { col: 6, row: 7, phase: 0.9 },
-  { col: 10, row: 9, phase: 3.3 },
-  { col: 6, row: 13, phase: 1.8 },
-  { col: 14, row: 13, phase: 4.4 },
+  { col: 2, row: 2, phase: 0.2 },
+  { col: 8, row: 2, phase: 1.4 },
+  { col: 14, row: 2, phase: 2.6 },
+  { col: 20, row: 2, phase: 3.3 },
+  { col: 2, row: 11, phase: 1.8 },
+  { col: 8, row: 11, phase: 4.4 },
+  { col: 14, row: 11, phase: 0.9 },
+  { col: 20, row: 11, phase: 3.8 },
 ]);
 
 function noise(a, b, salt = 0) {
@@ -34,6 +35,7 @@ export class StageRenderer {
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.maze = maze;
     this.screen = 'menu';
+    this.mapLayout = 'full';
     this.width = 1;
     this.height = 1;
     this.dpr = 1;
@@ -43,6 +45,7 @@ export class StageRenderer {
     this.story = null;
     this.playerFacing = 'down';
     this.creatureFacing = 'down';
+    this.elizabethFacing = 'down';
     this.backdrop = null;
     this.floorLayer = null;
     this.wallLayer = null;
@@ -60,6 +63,9 @@ export class StageRenderer {
         if (tile === TILE.WALL) this.wallCells.push({ c, r });
       });
     });
+    this.lampCells = LAMPS.filter(
+      (lamp) => this.maze.tiles[lamp.row]?.[lamp.col] === TILE.WALL,
+    );
 
     this.particles = Array.from({ length: 46 }, () => ({
       x: Math.random(),
@@ -80,6 +86,31 @@ export class StageRenderer {
     if (this.screen === screen) return;
     this.screen = screen;
     this.computeCamera();
+    this.buildFloorLayer();
+    this.buildWallLayer();
+  }
+
+  /** Switch between the immersive viewport map and a windowed stage. */
+  setMapLayout(layout) {
+    if (layout !== 'full' && layout !== 'windowed') return;
+    if (this.mapLayout === layout) return;
+    this.mapLayout = layout;
+    this.computeCamera();
+    this.buildFloorLayer();
+    this.buildWallLayer();
+  }
+
+  /** Rebuild terrain after a Hard-mode wall break. */
+  refreshMaze() {
+    this.wallCells = [];
+    this.maze.tiles.forEach((row, r) => {
+      row.forEach((tile, c) => {
+        if (tile === TILE.WALL) this.wallCells.push({ c, r });
+      });
+    });
+    this.lampCells = LAMPS.filter(
+      (lamp) => this.maze.tiles[lamp.row]?.[lamp.col] === TILE.WALL,
+    );
     this.buildFloorLayer();
     this.buildWallLayer();
   }
@@ -117,9 +148,36 @@ export class StageRenderer {
       life: 0,
       ttl: final ? 0.75 : 0.45,
       final,
+      kind: 'catch',
       sparks,
     });
     this.flash = Math.max(this.flash, final ? 0.6 : 0.2);
+  }
+
+  /** Stone chips and a brief flash when a Hard-mode dash breaks a wall. */
+  wallBreakEffect(col, row) {
+    const count = 20;
+    const sparks = Array.from({ length: count }, (_, index) => {
+      const angle = (index / count) * TAU + Math.random() * 0.4;
+      const speed = 0.9 + Math.random() * 2.2;
+      return {
+        x: 0,
+        y: 0,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.4,
+        size: 1 + Math.floor(Math.random() * 3),
+      };
+    });
+
+    this.effects.push({
+      x: col + 0.5,
+      y: row + 0.5,
+      life: 0,
+      ttl: 0.62,
+      kind: 'stone',
+      sparks,
+    });
+    this.flash = Math.max(this.flash, 0.2);
   }
 
   /** Red edge flare and a brief screen shudder cue for a lost life. */
@@ -143,16 +201,25 @@ export class StageRenderer {
     this.buildWallLayer();
   }
 
-  /** Keep the entire maze visible, with breathing room for the stage HUD. */
+  /** Fit the looped village to the viewport, with a compact HUD allowance. */
   computeCamera() {
     const stage = this.screen === 'stage';
+    const full = stage && this.mapLayout === 'full';
+    const narrow = this.width < 700;
     const insets = stage
-      ? {
-          top: Math.min(120, Math.round(this.height * 0.16)),
-          right: 20,
-          bottom: Math.min(84, Math.round(this.height * 0.12)),
-          left: 20,
-        }
+      ? full
+        ? {
+            top: narrow ? 154 : 72,
+            right: narrow ? 8 : 12,
+            bottom: narrow ? 18 : 52,
+            left: narrow ? 8 : 12,
+          }
+        : {
+            top: Math.min(120, Math.round(this.height * 0.16)),
+            right: 20,
+            bottom: Math.min(84, Math.round(this.height * 0.12)),
+            left: 20,
+          }
       : { top: 0, right: 0, bottom: 0, left: 0 };
 
     this.camera.fit({
@@ -160,7 +227,7 @@ export class StageRenderer {
       viewportHeight: this.height,
       columns: this.maze.columns,
       rows: this.maze.rows,
-      maxCell: stage ? 40 : 44,
+      maxCell: stage ? (full ? 120 : 40) : 44,
       insets,
     });
   }
@@ -190,8 +257,8 @@ export class StageRenderer {
     canvas.width = columns * cell;
     canvas.height = rows * cell;
     const ctx = canvas.getContext('2d');
-    const stones = ['#11191d', '#141e22', '#0e1619', '#172126', '#19242a'];
-    const divisions = cell >= 28 ? 4 : 3;
+    const stones = ['#2a383c', '#334347', '#3b4d50', '#46585b', '#202d30'];
+    const divisions = cell >= 30 ? 3 : 2;
     const step = cell / divisions;
 
     tiles.forEach((row, r) => {
@@ -199,29 +266,32 @@ export class StageRenderer {
         if (tile === TILE.WALL) return;
         const x = c * cell;
         const y = r * cell;
-        ctx.fillStyle = '#0b1215';
+        ctx.fillStyle = '#111b1e';
         ctx.fillRect(x, y, cell, cell);
 
         for (let sy = 0; sy < divisions; sy += 1) {
           for (let sx = 0; sx < divisions; sx += 1) {
             const pick = noise(c * 17 + sx, r * 19 + sy, 5);
+            const sx0 = x + Math.floor(sx * step) + 1;
+            const sy0 = y + Math.floor(sy * step) + 1;
+            const sw = Math.max(1, Math.ceil(step) - 2);
+            const sh = Math.max(1, Math.ceil(step) - 2);
             ctx.fillStyle = stones[Math.floor(pick * stones.length)];
-            ctx.fillRect(
-              x + Math.floor(sx * step) + 1,
-              y + Math.floor(sy * step) + 1,
-              Math.max(1, Math.ceil(step) - 2),
-              Math.max(1, Math.ceil(step) - 2),
-            );
+            ctx.fillRect(sx0, sy0, sw, sh);
+            ctx.fillStyle = 'rgba(221, 234, 226, 0.1)';
+            ctx.fillRect(sx0, sy0, sw, 1);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(sx0, sy0 + sh - 1, sw, 1);
           }
         }
 
-        if (noise(c, r, 11) > 0.84) {
-          ctx.fillStyle = 'rgba(94, 112, 78, 0.18)';
+        if (noise(c, r, 11) > 0.88) {
+          ctx.fillStyle = 'rgba(109, 132, 90, 0.18)';
           ctx.fillRect(
             x + Math.floor(cell * 0.2),
             y + Math.floor(cell * 0.72),
-            Math.max(2, Math.floor(cell * 0.28)),
-            2,
+            Math.max(2, Math.floor(cell * 0.24)),
+            1,
           );
         }
       });
@@ -261,7 +331,7 @@ export class StageRenderer {
         ctx.rect(x, y, cell, cell);
         ctx.clip();
 
-        ctx.fillStyle = '#080c0f';
+        ctx.fillStyle = '#080d10';
         ctx.fillRect(x, y, cell, cell);
 
         for (let by = 0; by < cell; by += brickH) {
@@ -270,7 +340,7 @@ export class StageRenderer {
             const bx2 = x + bx + offset;
             const by2 = y + by;
             const pick = noise(c * 13 + Math.floor(bx / brickW), r * 17 + Math.floor(by / brickH), 7);
-            const base = pick > 0.68 ? '#263138' : pick > 0.34 ? '#1d272d' : '#192228';
+            const base = pick > 0.68 ? '#2b373d' : pick > 0.34 ? '#202b30' : '#192328';
             const width = Math.max(3, brickW - 2);
             const height = Math.max(3, brickH - 2);
 
@@ -292,22 +362,38 @@ export class StageRenderer {
         }
 
         if (!isWall(c, r - 1)) {
-          ctx.fillStyle = 'rgba(164, 192, 197, 0.28)';
-          ctx.fillRect(x, y, cell, Math.max(1, Math.floor(cell * 0.06)));
-          ctx.fillStyle = 'rgba(164, 192, 197, 0.1)';
-          ctx.fillRect(x, y + 2, cell, Math.max(1, Math.floor(cell * 0.09)));
+          ctx.fillStyle = 'rgba(190, 211, 207, 0.46)';
+          ctx.fillRect(x, y, cell, Math.max(2, Math.floor(cell * 0.07)));
+          ctx.fillStyle = 'rgba(190, 211, 207, 0.16)';
+          ctx.fillRect(x, y + 2, cell, Math.max(1, Math.floor(cell * 0.06)));
         }
         if (!isWall(c, r + 1)) {
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-          ctx.fillRect(x, y + cell - Math.max(2, Math.floor(cell * 0.1)), cell, 2);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.62)';
+          ctx.fillRect(
+            x,
+            y + cell - Math.max(2, Math.floor(cell * 0.1)),
+            cell,
+            Math.max(2, Math.floor(cell * 0.1)),
+          );
         }
         if (!isWall(c - 1, r)) {
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
           ctx.fillRect(x, y, Math.max(1, Math.floor(cell * 0.05)), cell);
         }
         if (!isWall(c + 1, r)) {
-          ctx.fillStyle = 'rgba(130, 154, 160, 0.1)';
+          ctx.fillStyle = 'rgba(170, 192, 193, 0.2)';
           ctx.fillRect(x + cell - Math.max(1, Math.floor(cell * 0.04)), y, 1, cell);
+        }
+
+        if (
+          !isWall(c - 1, r) ||
+          !isWall(c + 1, r) ||
+          !isWall(c, r - 1) ||
+          !isWall(c, r + 1)
+        ) {
+          ctx.strokeStyle = 'rgba(181, 202, 199, 0.24)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x + 0.5, y + 0.5, cell - 1, cell - 1);
         }
 
         ctx.restore();
@@ -381,7 +467,7 @@ export class StageRenderer {
       this.drawArcs();
     }
 
-    if (stage && this.story) this.drawWilliamSprite();
+    if (stage && this.story?.elizabeth) this.drawElizabethSprite();
     if (stage && this.creature) this.drawCreatureSprite();
     if (stage && this.player) this.drawPlayer();
     if (stage) {
@@ -429,6 +515,38 @@ export class StageRenderer {
     this.creatureFacing = direction;
     const frame = creature.moving ? Math.floor(this.time * 9) % 2 : 0;
     const { ctx } = this;
+    const cell = this.camera.cell;
+
+    if (creature.dashing) {
+      const drift = {
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 },
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 },
+      }[direction] ?? { x: 0, y: 1 };
+
+      ctx.save();
+      for (const [back, alpha] of [
+        [cell * 0.28, 0.22],
+        [cell * 0.54, 0.11],
+      ]) {
+        ctx.globalAlpha = alpha;
+        drawCreature(ctx, {
+          x: point.x - drift.x * back,
+          y: point.y - drift.y * back,
+          cell,
+          direction,
+          frame,
+        });
+      }
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = 'rgba(229, 153, 99, 0.6)';
+      ctx.lineWidth = Math.max(1, cell * 0.04);
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, cell * 0.6, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     ctx.save();
     if (creature.invulnerableFor > 0) {
@@ -444,38 +562,42 @@ export class StageRenderer {
     ctx.restore();
   }
 
-  drawWilliamSprite() {
+  drawElizabethSprite() {
     const { ctx, story } = this;
-    const point = this.camera.toScreen(story.william.col + 0.5, story.william.row + 0.5);
+    const elizabeth = story.elizabeth;
+    const point = this.camera.toScreen(elizabeth.x, elizabeth.y);
     const cell = this.camera.cell;
+    const direction = elizabeth.direction?.name ?? this.elizabethFacing;
+    this.elizabethFacing = direction;
+    const frame = elizabeth.moving ? Math.floor(this.time * 6) % 2 : 0;
     const pulse = this.animate ? 0.5 + 0.5 * Math.sin(this.time * 2.6) : 0.7;
 
     ctx.save();
-    const glow = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, cell * 1.3);
-    glow.addColorStop(0, `rgba(255, 195, 100, ${0.1 + pulse * 0.05})`);
-    glow.addColorStop(1, 'rgba(255, 195, 100, 0)');
+    const glow = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, cell * 1.35);
+    glow.addColorStop(0, `rgba(255, 193, 165, ${0.1 + pulse * 0.05})`);
+    glow.addColorStop(1, 'rgba(255, 193, 165, 0)');
     ctx.fillStyle = glow;
-    ctx.fillRect(point.x - cell * 1.3, point.y - cell * 1.3, cell * 2.6, cell * 2.6);
+    ctx.fillRect(point.x - cell * 1.35, point.y - cell * 1.35, cell * 2.7, cell * 2.7);
 
     ctx.beginPath();
     ctx.arc(point.x, point.y, cell * (0.52 + pulse * 0.12), 0, TAU);
-    ctx.strokeStyle = `rgba(255, 207, 116, ${0.2 + pulse * 0.24})`;
+    ctx.strokeStyle = `rgba(255, 207, 172, ${0.2 + pulse * 0.24})`;
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    drawWilliam(ctx, {
+    drawElizabeth(ctx, {
       x: point.x,
       y: point.y,
       cell,
-      direction: 'down',
-      frame: 0,
+      direction,
+      frame,
     });
 
-    if (cell >= 24) {
-      ctx.font = `${Math.max(6, Math.round(cell * 0.19))}px ui-monospace, monospace`;
+    if (cell >= 20) {
+      ctx.font = `${Math.max(6, Math.round(cell * 0.17))}px ui-monospace, monospace`;
       ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(255, 216, 140, 0.92)';
-      ctx.fillText('WILLIAM', point.x, point.y - cell * 0.88);
+      ctx.fillStyle = 'rgba(255, 222, 193, 0.94)';
+      ctx.fillText('ELIZABETH', point.x, point.y - cell * 0.88);
     }
     ctx.restore();
   }
@@ -487,7 +609,7 @@ export class StageRenderer {
 
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    for (const lamp of LAMPS) {
+    for (const lamp of this.lampCells) {
       const point = this.camera.toScreen(lamp.col + 0.5, lamp.row + 0.5);
       const flicker = 0.86 + 0.14 * Math.sin(this.time * 4.8 + lamp.phase);
       const radius = cell * 2.8;
@@ -508,7 +630,7 @@ export class StageRenderer {
     const cell = this.camera.cell;
     if (!cell) return;
 
-    for (const lamp of LAMPS) {
+    for (const lamp of this.lampCells) {
       const point = this.camera.toScreen(lamp.col + 0.5, lamp.row + 0.5);
       const flicker = 0.78 + 0.22 * Math.sin(this.time * 5.1 + lamp.phase);
       const x = Math.round(point.x);
@@ -689,13 +811,16 @@ export class StageRenderer {
       const progress = effect.life / effect.ttl;
       const point = this.camera.toScreen(effect.x, effect.y);
       const alpha = 1 - progress;
+      const stone = effect.kind === 'stone';
       const radius = cell * (0.22 + progress * (effect.final ? 1.7 : 1.1));
 
       ctx.beginPath();
       ctx.arc(point.x, point.y, radius, 0, TAU);
-      ctx.strokeStyle = effect.final
-        ? `rgba(255, 225, 154, ${alpha * 0.9})`
-        : `rgba(244, 190, 96, ${alpha * 0.7})`;
+      ctx.strokeStyle = stone
+        ? `rgba(205, 220, 216, ${alpha * 0.72})`
+        : effect.final
+          ? `rgba(255, 225, 154, ${alpha * 0.9})`
+          : `rgba(244, 190, 96, ${alpha * 0.7})`;
       ctx.lineWidth = Math.max(1, cell * 0.055 * alpha);
       ctx.stroke();
 
@@ -708,9 +833,11 @@ export class StageRenderer {
       }
 
       for (const spark of effect.sparks) {
-        ctx.fillStyle = effect.final
-          ? `rgba(255, 220, 150, ${alpha})`
-          : `rgba(240, 184, 92, ${alpha * 0.9})`;
+        ctx.fillStyle = stone
+          ? `rgba(191, 207, 203, ${alpha * 0.9})`
+          : effect.final
+            ? `rgba(255, 220, 150, ${alpha})`
+            : `rgba(240, 184, 92, ${alpha * 0.9})`;
         ctx.fillRect(
           Math.round(point.x + spark.x * cell),
           Math.round(point.y + spark.y * cell),

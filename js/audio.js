@@ -29,6 +29,11 @@ const VOICES = {
     { f: 196, d: 0.12, type: 'square', gain: 0.07 },
     { f: 130.81, d: 0.2, type: 'sawtooth', gain: 0.06, at: 0.03 },
   ],
+  shatter: [
+    { f: 98, d: 0.16, type: 'sawtooth', gain: 0.06 },
+    { f: 73.42, d: 0.22, type: 'square', gain: 0.05, at: 0.04 },
+    { f: 51.91, d: 0.32, type: 'triangle', gain: 0.05, at: 0.12 },
+  ],
   win: [
     { f: 392, d: 0.12, type: 'triangle', gain: 0.08 },
     { f: 523.25, d: 0.12, type: 'triangle', gain: 0.08, at: 0.12 },

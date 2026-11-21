@@ -10,6 +10,7 @@ export const STORAGE_KEY = 'frankenstein:settings:v1';
 export const DEFAULT_SETTINGS = Object.freeze({
   difficulty: 'normal',
   sound: true,
+  mapLayout: 'full',
 });
 
 /** Capture-loop rules shared by every difficulty. */
@@ -26,11 +27,16 @@ export const DIFFICULTIES = Object.freeze({
     playerSpeed: 4.2,
     timeLimit: 120,
     starThresholds: Object.freeze({ three: 60, two: 95 }),
-    hint: 'Slow Creature. 120 seconds and three lives.',
+    hint: 'Slow Creature, dashes every 14s. 120 seconds and three lives.',
     creature: Object.freeze({
       strategy: 'wander',
       speed: 3.1,
       continueChance: 0.55,
+      dashCooldown: 14,
+      dashDuration: 0.45,
+      dashMultiplier: 2,
+      dashRange: 6,
+      destroyWalls: false,
     }),
   }),
   normal: Object.freeze({
@@ -39,12 +45,17 @@ export const DIFFICULTIES = Object.freeze({
     playerSpeed: 5,
     timeLimit: 90,
     starThresholds: Object.freeze({ three: 40, two: 70 }),
-    hint: 'Faster Creature. 90 seconds and three lives.',
+    hint: 'Dashing Creature, 10s dash cooldown. 90 seconds and three lives.',
     creature: Object.freeze({
       strategy: 'evade',
       speed: 3.9,
       continueChance: 0.5,
       fleeRadius: 7,
+      dashCooldown: 10,
+      dashDuration: 0.5,
+      dashMultiplier: 2.15,
+      dashRange: 7,
+      destroyWalls: false,
     }),
   }),
   hard: Object.freeze({
@@ -53,7 +64,7 @@ export const DIFFICULTIES = Object.freeze({
     playerSpeed: 5.6,
     timeLimit: 60,
     starThresholds: Object.freeze({ three: 25, two: 45 }),
-    hint: 'Fastest Creature. 60 seconds and three lives.',
+    hint: 'Fastest Creature. Dashes every 8s and shatters walls. 60 seconds and three lives.',
     creature: Object.freeze({
       strategy: 'outwit',
       speed: 4.7,
@@ -65,6 +76,11 @@ export const DIFFICULTIES = Object.freeze({
       opennessWeight: 3,
       deadEndPenalty: 400,
       jitter: 1.5,
+      dashCooldown: 8,
+      dashDuration: 0.55,
+      dashMultiplier: 2.3,
+      dashRange: 8,
+      destroyWalls: true,
     }),
   }),
 });

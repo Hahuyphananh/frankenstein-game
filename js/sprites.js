@@ -20,15 +20,15 @@ const PALETTES = Object.freeze({
     skinShadow: '#b8916d',
     hair: '#231c17',
     hairLight: '#3a2c22',
-    coat: '#1d2736',
-    coatLight: '#31445c',
-    coatDark: '#141c27',
-    trousers: '#171d26',
+    coat: '#d9d4c5',
+    coatLight: '#f1eddf',
+    coatDark: '#a9a594',
+    trousers: '#242b33',
     boots: '#0b0e12',
-    cravat: '#e8e2d2',
-    waistcoat: '#632b36',
-    belt: '#0d1116',
-    gold: '#c9a85f',
+    cravat: '#6e2d38',
+    waistcoat: '#30495b',
+    belt: '#12171c',
+    gold: '#c7a35b',
     glasses: '#d8c690',
     glassShade: '#3a3a32',
     mouth: '#6d4b3d',
@@ -54,26 +54,6 @@ const PALETTES = Object.freeze({
     glasses: '#b8b6a6',
     glassShade: '#1a1a17',
     skinLight: '#93b07b',
-  }),
-  william: Object.freeze({
-    skin: '#e0c3a3',
-    skinShadow: '#bd9d7e',
-    hair: '#6b4a2f',
-    hairLight: '#8b6742',
-    coat: '#465a70',
-    coatLight: '#607890',
-    coatDark: '#2d3b4b',
-    trousers: '#30363e',
-    boots: '#14171b',
-    scarf: '#b23a3f',
-    waistcoat: '#7f8f9f',
-    belt: '#20252b',
-    cap: '#3d4247',
-    capShade: '#292d31',
-    lantern: '#f4c35a',
-    lanternDark: '#6b5128',
-    iron: '#1b1d1e',
-    mouth: '#755142',
   }),
   justine: Object.freeze({
     skin: '#d9b792',
@@ -187,9 +167,42 @@ function drawHumanTorso(ctx, p, direction, frame, kind) {
     px(ctx, 23, 20 + swing, 3, 2, p.skin);
   }
 
-  if (kind === 'victor' && direction !== 'up') {
-    px(ctx, 22, 19, 3, 3, '#8fd16b');
-    px(ctx, 23, 18, 1, 1, '#c9f3a8');
+  if (kind === 'victor') {
+    // Long ivory laboratory coat with a split hem so the legs stay readable.
+    if (direction === 'up') {
+      px(ctx, 9, 21, 14, 6, OUTLINE);
+      px(ctx, 10, 21, 12, 5, p.coat);
+      px(ctx, 15, 23, 2, 3, p.coatDark);
+    } else if (direction === 'left') {
+      px(ctx, 8, 21, 7, 6, OUTLINE);
+      px(ctx, 9, 21, 6, 5, p.coat);
+      px(ctx, 9, 26, 6, 1, p.coatDark);
+      px(ctx, 21, 21, 2, 4, p.coat);
+    } else {
+      px(ctx, 8, 21, 5, 6, OUTLINE);
+      px(ctx, 9, 21, 4, 5, p.coat);
+      px(ctx, 9, 26, 4, 1, p.coatDark);
+      px(ctx, 19, 21, 5, 6, OUTLINE);
+      px(ctx, 20, 21, 4, 5, p.coat);
+      px(ctx, 20, 26, 4, 1, p.coatDark);
+    }
+
+    if (direction !== 'up') {
+      // Lapels, breast pocket and a pair of laboratory pencils.
+      px(ctx, 11, 12, 2, 4, p.coatLight);
+      px(ctx, 19, 12, 2, 4, p.coatLight);
+      px(ctx, 18, 15, 4, 4, p.coatDark);
+      px(ctx, 19, 16, 2, 2, p.coatLight);
+      px(ctx, 19, 15, 1, 2, '#8fa9a6');
+      px(ctx, 21, 15, 1, 2, p.gold);
+      px(ctx, 15, 16, 1, 1, p.gold);
+      px(ctx, 15, 19, 1, 1, p.gold);
+    }
+
+    if (direction !== 'up') {
+      px(ctx, 22, 19, 3, 3, '#8fd16b');
+      px(ctx, 23, 18, 1, 1, '#c9f3a8');
+    }
   }
 }
 
@@ -349,63 +362,6 @@ function drawGown(ctx, kind, direction, frame) {
   drawFemaleHead(ctx, p, direction, kind);
 }
 
-function drawChild(ctx, direction, frame) {
-  const p = PALETTES.william;
-  const lift = frame ? 1 : 0;
-
-  drawShadow(ctx, 12);
-
-  px(ctx, 13, 23 + lift, 3, 5 - lift, p.trousers);
-  px(ctx, 12, 28 + lift, 4, 2, p.boots);
-  px(ctx, 17, 23, 3, 5 - lift, p.trousers);
-  px(ctx, 17, 28, 4, 2 + lift, p.boots);
-
-  px(ctx, 11, 14, 10, 10, OUTLINE);
-  px(ctx, 12, 15, 8, 8, p.coat);
-  px(ctx, 12, 22, 8, 2, p.coatDark);
-  px(ctx, 9, 15, 2, 7, p.coatDark);
-  px(ctx, 21, 15, 2, 7, p.coatDark);
-  px(ctx, 9, 21, 2, 2, p.skin);
-  px(ctx, 21, 21, 2, 2, p.skin);
-
-  px(ctx, 12, 13, 8, 2, p.scarf);
-  px(ctx, 19, 15, 2, 3, p.scarf);
-  px(ctx, 14, 16, 1, 1, p.waistcoat);
-
-  px(ctx, 11, 4, 10, 10, OUTLINE);
-
-  if (direction === 'up') {
-    px(ctx, 12, 5, 8, 8, p.hair);
-    px(ctx, 10, 3, 12, 3, p.cap);
-    px(ctx, 9, 5, 14, 1, p.capShade);
-    px(ctx, 12, 12, 8, 1, p.scarf);
-    return;
-  }
-
-  px(ctx, 12, 5, 8, 7, p.skin);
-  px(ctx, 11, 4, 10, 3, p.hair);
-
-  if (direction === 'left') {
-    px(ctx, 12, 8, 1, 2, EYE);
-    px(ctx, 11, 9, 1, 1, p.skinShadow);
-    px(ctx, 14, 10, 3, 1, p.mouth);
-  } else {
-    px(ctx, 13, 8, 1, 2, EYE);
-    px(ctx, 18, 8, 1, 2, EYE);
-    px(ctx, 15, 9, 2, 1, p.skinShadow);
-    px(ctx, 14, 10, 4, 1, p.mouth);
-  }
-
-  px(ctx, 10, 3, 12, 2, p.cap);
-  px(ctx, 9, 5, 14, 1, p.capShade);
-
-  px(ctx, 24, 17, 1, 3, p.iron);
-  px(ctx, 23, 20, 4, 4, p.lanternDark);
-  px(ctx, 24, 21, 2, 2, p.lantern);
-  px(ctx, 22, 20, 1, 3, 'rgba(244, 195, 90, 0.28)');
-  px(ctx, 27, 20, 1, 3, 'rgba(244, 195, 90, 0.2)');
-}
-
 function drawCreaturePixels(ctx, direction, frame) {
   const p = PALETTES.creature;
   const swing = frame ? 1 : -1;
@@ -491,7 +447,6 @@ function buildSprite(kind, direction, frame) {
   ctx.imageSmoothingEnabled = false;
 
   if (kind === 'creature') drawCreaturePixels(ctx, direction, frame);
-  else if (kind === 'william') drawChild(ctx, direction, frame);
   else if (kind === 'justine' || kind === 'elizabeth') drawGown(ctx, kind, direction, frame);
   else drawMale(ctx, kind, direction, frame);
 
@@ -520,7 +475,7 @@ function drawSprite(kind, ctx, options = {}) {
   const facing = direction === 'right' ? 'left' : direction;
   const flip = direction === 'right';
   const sprite = getSprite(kind, facing, frame % 2);
-  const factor = kind === 'creature' ? 1.18 : kind === 'william' ? 0.82 : 1;
+  const factor = kind === 'creature' ? 1.18 : 1;
   const size = Math.max(1, Math.round(cell * factor));
   const top = Math.round(y - size / 2 + (kind === 'creature' ? -cell * 0.04 : 0));
   const centerX = Math.round(x);
@@ -539,10 +494,6 @@ export function drawVictor(ctx, options = {}) {
 
 export function drawCreature(ctx, options = {}) {
   drawSprite('creature', ctx, options);
-}
-
-export function drawWilliam(ctx, options = {}) {
-  drawSprite('william', ctx, options);
 }
 
 export function drawJustine(ctx, options = {}) {

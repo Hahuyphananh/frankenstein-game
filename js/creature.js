@@ -1,6 +1,6 @@
 import { CREATURE_RULES } from './config.js';
 import { GridActor } from './actor.js';
-import { walkableNeighbors } from './maze.js';
+import { isWalkableTile, walkableNeighbors } from './maze.js';
 import { buildDistanceField, fieldDistance, maxDistanceInRange } from './pathing.js';
 
 const OPPOSITE = Object.freeze({
@@ -16,18 +16,21 @@ function pick(list, rng) {
 }
 
 /**
- * The Creature. All tuning lives in the difficulty profile from config.js:
+ * The Creature. All tuning lives in the difficulty profile from config.js.
  *
- *   wander — slow, random but legal moves, ignores Victor
- *   evade  — flees when Victor is inside fleeRadius, otherwise wanders
- *   outwit — always maximises distance, scores escape routes with a short
- *            lookahead and penalises dead-end tiles
- *
- * Movement itself comes from GridActor, so the Creature can never enter a
- * wall or move to a non-adjacent tile.
+ * Dash: a short burst of speed when the target is nearby. The profile owns
+ * the cooldown (10 seconds on Normal) and, on Hard, whether the dash can
+ * shatter one wall. Respawn always selects a different walkable corner.
  */
 export class Creature extends GridActor {
-  constructor({ maze, spawn, profile, rules = CREATURE_RULES, rng = Math.random }) {
+  constructor({
+    maze,
+    spawn,
+    profile,
+    rules = CREATURE_RULES,
+    rng = Math.random,
+    spawnPoints = null,
+  }) {
     if (!profile?.strategy) throw new Error('Creature: a strategy profile is required.');
 
     super({ maze, spawn, speed: profile.speed });
@@ -37,6 +40,17 @@ export class Creature extends GridActor {
     this.maxLives = rules.lives;
     this.lives = rules.lives;
     this.invulnerableFor = 0;
+    this.baseSpeed = profile.speed;
+    this.spawnPoints = Object.freeze(
+      (spawnPoints?.length ? spawnPoints : [spawn]).map((tile) =>
+        Object.freeze({ col: tile.col, row: tile.row }),
+      ),
+    );
+    this.lastRespawn = Object.freeze({ col: spawn.col, row: spawn.row });
+    this.usedRespawns = new Set([`${spawn.col},${spawn.row}`]);
+    this.dashFor = 0;
+    this.dashCooldownFor = 0;
+    this.wallBreakAvailable = false;
   }
 
   reset() {
@@ -44,10 +58,21 @@ export class Creature extends GridActor {
     this.fieldKey = null;
     this.distanceField = null;
     this.invulnerableFor = 0;
+    this.dashFor = 0;
+    this.speed = this.baseSpeed ?? this.profile?.speed ?? this.speed;
+    this.wallBreakAvailable = false;
   }
 
   get invulnerable() {
     return this.invulnerableFor > 0;
+  }
+
+  get dashing() {
+    return this.dashFor > 0;
+  }
+
+  get dashCooldownRemaining() {
+    return this.dashCooldownFor;
   }
 
   /** Distance check in tile units, shared by the collision loop. */
@@ -58,21 +83,80 @@ export class Creature extends GridActor {
     return dx * dx + dy * dy <= distance * distance + 1e-9;
   }
 
-  /** Lose a life and return to the start location, protected briefly. */
-  hit() {
+  /** Lose a life and reappear at a different walkable corner. */
+  hit(victor = null) {
     if (this.invulnerable || this.lives <= 0) return false;
 
     this.lives -= 1;
-    this.reset();
+    this.dashFor = 0;
+    this.wallBreakAvailable = false;
+    this.speed = this.baseSpeed;
+
+    const corner = this.nextRespawnCorner(victor);
+    this.teleportTo(corner);
+    this.lastRespawn = Object.freeze({ col: corner.col, row: corner.row });
+    this.usedRespawns.add(`${corner.col},${corner.row}`);
+    this.invalidatePathing();
     this.invulnerableFor = this.rules.respawnInvulnerability;
     return true;
+  }
+
+  /** Exclude the previous corner, then prefer a corner away from Victor. */
+  nextRespawnCorner(victor) {
+    const corners = this.spawnPoints.filter((tile) =>
+      isWalkableTile(this.maze, tile.col, tile.row),
+    );
+    const different = corners.filter(
+      (tile) =>
+        (tile.col !== this.lastRespawn.col || tile.row !== this.lastRespawn.row) &&
+        (tile.col !== this.col || tile.row !== this.row),
+    );
+    const unused = different.filter(
+      (tile) => !this.usedRespawns.has(`${tile.col},${tile.row}`),
+    );
+    const pool = unused.length ? unused : different.length ? different : corners;
+    const safe = victor
+      ? pool.filter(
+          (tile) =>
+            Math.hypot(tile.col + 0.5 - victor.x, tile.row + 0.5 - victor.y) >= 4,
+        )
+      : pool;
+
+    return pick(safe.length ? safe : pool, this.rng) ?? this.spawn;
   }
 
   update(dt, context) {
     if (this.invulnerableFor > 0) {
       this.invulnerableFor = Math.max(0, this.invulnerableFor - dt);
     }
+
+    this.dashCooldownFor = Math.max(0, this.dashCooldownFor - dt);
+    if (this.dashFor > 0) {
+      this.dashFor = Math.max(0, this.dashFor - dt);
+      this.speed = this.baseSpeed * (this.profile.dashMultiplier ?? 2);
+    } else {
+      this.speed = this.baseSpeed;
+      if (this.canDash(context)) this.beginDash();
+    }
+
     super.update(dt, context);
+  }
+
+  canDash(context) {
+    if (!(this.profile.dashCooldown > 0) || this.dashCooldownFor > 0 || this.dashFor > 0) {
+      return false;
+    }
+
+    const goal = context?.goal;
+    if (!goal) return false;
+    const distance = Math.hypot(goal.col + 0.5 - this.x, goal.row + 0.5 - this.y);
+    return distance > 1.15 && distance <= (this.profile.dashRange ?? 7);
+  }
+
+  beginDash() {
+    this.dashFor = this.profile.dashDuration ?? 0.5;
+    this.dashCooldownFor = this.profile.dashCooldown;
+    this.wallBreakAvailable = Boolean(this.profile.destroyWalls);
   }
 
   chooseDirection(context) {
@@ -204,5 +288,11 @@ export class Creature extends GridActor {
       this.fieldKey = key;
     }
     return this.distanceField;
+  }
+
+  /** Called after a Hard-mode wall break changes the walkable graph. */
+  invalidatePathing() {
+    this.fieldKey = null;
+    this.distanceField = null;
   }
 }

@@ -34,6 +34,19 @@ export class GridActor {
     this.animTime = 0;
   }
 
+  /** Move to another legal tile, clearing any in-progress step. */
+  teleportTo(tile) {
+    if (!tile || !isWalkableTile(this.maze, tile.col, tile.row)) return false;
+    this.col = tile.col;
+    this.row = tile.row;
+    this.offset = 0;
+    this.direction = null;
+    this.moving = false;
+    this.facing = 'right';
+    this.animTime = 0;
+    return true;
+  }
+
   /** Position in tile units (0.5 is a tile centre). */
   get x() {
     return this.col + 0.5 + (this.direction ? this.direction.x * this.offset : 0);

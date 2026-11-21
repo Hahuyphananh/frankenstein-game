@@ -14,6 +14,10 @@ export function loadSettings() {
     return {
       difficulty: isDifficulty(parsed?.difficulty) ? parsed.difficulty : DEFAULT_SETTINGS.difficulty,
       sound: typeof parsed?.sound === 'boolean' ? parsed.sound : DEFAULT_SETTINGS.sound,
+      mapLayout:
+        parsed?.mapLayout === 'full' || parsed?.mapLayout === 'windowed'
+          ? parsed.mapLayout
+          : DEFAULT_SETTINGS.mapLayout,
     };
   } catch (error) {
     console.warn('[FRANKENSTEIN] Settings could not be read, using defaults.', error);
@@ -28,6 +32,7 @@ export function saveSettings(settings) {
       JSON.stringify({
         difficulty: settings.difficulty,
         sound: settings.sound,
+        mapLayout: settings.mapLayout,
       }),
     );
   } catch (error) {

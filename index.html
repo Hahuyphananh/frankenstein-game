@@ -7,7 +7,7 @@
     <title>FRANKENSTEIN — Maze Arcade</title>
     <meta
       name="description"
-      content="FRANKENSTEIN is a 2D maze arcade game built with HTML Canvas, CSS and vanilla JavaScript. One Victorian village, one Creature, and William to protect."
+      content="FRANKENSTEIN is a 2D maze arcade game built with HTML Canvas, CSS and vanilla JavaScript. One Victorian village, one Creature, and Elizabeth to protect."
     />
     <link
       rel="icon"
@@ -34,7 +34,7 @@
             <div class="brand">
               <p class="label">A Victorian village · nightfall</p>
               <h1 class="title" id="game-title"><span class="title__text">Frankenstein</span></h1>
-              <p class="tagline">The Creature is loose. Protect William — or Justine pays the price.</p>
+              <p class="tagline">The Creature is loose. Protect Elizabeth — or Justine pays the price.</p>
             </div>
 
             <nav class="menu" aria-label="Main menu">
@@ -95,7 +95,7 @@
             </nav>
 
             <footer class="panel__footer">
-              <span>v0.7 gothic build</span>
+              <span>v0.8 gothic build</span>
               <span class="panel__dot" aria-hidden="true"></span>
               <span>Pixel cast active</span>
             </footer>
@@ -113,9 +113,9 @@
           <header class="hud">
             <div class="hud__title-wrap">
               <p class="label">Victorian village · nightfall</p>
-              <h2 class="hud__title" id="stage-title">Protect William</h2>
+              <h2 class="hud__title" id="stage-title">Protect Elizabeth</h2>
               <p class="hud__objective">
-                The Creature is hunting William. Catch its three lives before it reaches him.
+                The Creature is hunting Elizabeth. Catch its three lives before it reaches her.
               </p>
             </div>
             <div class="hud__actions">
@@ -144,6 +144,15 @@
               </div>
               <span class="chip" id="stage-difficulty" data-level="normal">Normal</span>
               <button
+                class="btn btn--ghost btn--small"
+                id="btn-map-layout"
+                type="button"
+                aria-pressed="true"
+                aria-label="Switch to windowed map"
+              >
+                Windowed
+              </button>
+              <button
                 class="btn btn--ghost btn--small sound-toggle"
                 data-sound-toggle
                 type="button"
@@ -165,6 +174,7 @@
             </p>
             <p class="stage-bar__hint">
               <span class="stage-bar__keys"><kbd>P</kbd></span><span>pause</span>
+              <span class="stage-bar__keys"><kbd>F</kbd></span><span>map size</span>
               <span class="stage-bar__keys"><kbd>Esc</kbd></span><span>menu</span>
             </p>
           </div>
@@ -177,9 +187,9 @@
               aria-describedby="stage-result-copy result-epilogue"
             >
               <p class="label" id="result-label">The Creature is caught</p>
-              <h3 class="stage-result__title" id="stage-result-title">William is safe.</h3>
+              <h3 class="stage-result__title" id="stage-result-title">Elizabeth is safe.</h3>
               <p class="stage-result__copy" id="stage-result-copy">
-                Victor catches the Creature before it can reach William.
+                Victor catches the Creature before it can reach Elizabeth.
               </p>
               <p class="stage-result__epilogue" id="result-epilogue" hidden></p>
               <dl class="result-stats">
@@ -220,7 +230,7 @@
               <p class="label">Experiment suspended</p>
               <h3 class="stage-result__title" id="pause-title">Paused.</h3>
               <p class="stage-result__copy" id="pause-copy">
-                The timer is frozen. William is still waiting.
+                The timer is frozen. Elizabeth is still hurrying through the streets.
               </p>
               <div class="stage-result__actions stage-result__actions--three">
                 <button class="btn btn--primary" id="btn-resume" type="button">Resume</button>
@@ -239,7 +249,7 @@
       <div class="modal__inner">
         <header class="modal__head">
           <p class="label">Field notes</p>
-          <h2 class="modal__title" id="instructions-title">How to protect William</h2>
+          <h2 class="modal__title" id="instructions-title">How to protect Elizabeth</h2>
           <button
             class="modal__close"
             id="btn-close-instructions"
@@ -254,12 +264,14 @@
           <section>
             <h3>Objective</h3>
             <p>
-              The Creature has escaped into a Victorian village and is making for William
-              Frankenstein. Victor can touch it safely; each touch costs the Creature one of its
-              three lives and sends it back to the start. Catch all three before it reaches
-              William. If it reaches him, William dies and Justine Moritz is later executed after
-              being falsely accused of the murder — Justine is not killed by the Creature. If
-              Victor catches it first, William survives and Justine is never accused.
+              The Creature has escaped into a Victorian village and is hunting Elizabeth as she
+              moves through the cobbled streets. Victor can touch it safely; each touch costs the
+              Creature one of its three lives and sends it to a different corner. Catch all three
+              before it reaches Elizabeth. The Creature can dash — every 10 seconds on Normal —
+              and on Hard each dash can shatter one wall. If it reaches Elizabeth, she dies and
+              Justine Moritz is later executed after being falsely accused of her murder. Justine
+              is not killed by the Creature. If Victor catches it first, Elizabeth survives and
+              Justine is never accused.
             </p>
           </section>
 
@@ -275,11 +287,6 @@
                 <canvas class="cast__portrait" data-cast="creature" width="64" height="64" aria-hidden="true"></canvas>
                 <span class="cast__name">The Creature</span>
                 <span class="cast__role">The maker's mistake</span>
-              </li>
-              <li class="cast__item">
-                <canvas class="cast__portrait" data-cast="william" width="64" height="64" aria-hidden="true"></canvas>
-                <span class="cast__name">William</span>
-                <span class="cast__role">Child</span>
               </li>
               <li class="cast__item">
                 <canvas class="cast__portrait" data-cast="justine" width="64" height="64" aria-hidden="true"></canvas>
@@ -317,6 +324,10 @@
                 <span>Pause / resume the timer</span>
               </li>
               <li>
+                <span class="keys__combo"><kbd>F</kbd></span>
+                <span>Toggle full-screen or windowed map</span>
+              </li>
+              <li>
                 <span class="keys__combo"><kbd>Esc</kbd></span>
                 <span>Leave the maze</span>
               </li>
@@ -331,14 +342,16 @@
             <h3>Difficulty</h3>
             <p>
               Easy allows 120 seconds, Normal 90 and Hard 60. Faster catches earn up to three
-              stars, while every setting gives the Creature three lives. The Creature follows the
-              shortest route to William; higher difficulties make it faster.
+              stars, while every setting gives the Creature three lives and a different corner
+              after each hit. Normal's dash returns every 10 seconds; Hard's dash can break one
+              wall. Elizabeth moves slowly, wanders the looped streets and flees when the
+              Creature gets close.
             </p>
           </section>
 
           <p class="modal__note">
-            Current build: one Victorian village story level with William, a goal-seeking
-            Creature, pause, timer and two story outcomes. There is no level progression yet.
+            Current build: one Victorian village story level with a moving Elizabeth, looping
+            streets, Creature dash and Hard-mode wall breaks. There is no level progression yet.
           </p>
         </div>
 

@@ -24,6 +24,7 @@ export class MenuView {
     this.instructionsButton = byId('btn-instructions');
     this.difficultyHint = byId('difficulty-hint');
     this.difficultyChip = byId('stage-difficulty');
+    this.mapLayoutButton = byId('btn-map-layout');
     this.dialog = byId('instructions-dialog');
     this.radios = [...document.querySelectorAll('input[name="difficulty"]')];
     this.soundButtons = [...document.querySelectorAll('[data-sound-toggle]')];
@@ -60,6 +61,7 @@ export class MenuView {
     byId('btn-pause-menu').addEventListener('click', () => handlers.onBack?.());
     byId('btn-back').addEventListener('click', () => handlers.onBack?.());
     this.instructionsButton.addEventListener('click', () => handlers.onInstructions?.());
+    this.mapLayoutButton.addEventListener('click', () => handlers.onMapLayout?.());
     byId('btn-close-instructions').addEventListener('click', () => this.dialog.close());
     byId('btn-close-instructions-2').addEventListener('click', () => this.dialog.close());
 
@@ -85,6 +87,18 @@ export class MenuView {
     });
     this.setDifficulty(settings.difficulty);
     this.setSound(settings.sound);
+    this.setMapLayout(settings.mapLayout);
+  }
+
+  setMapLayout(layout) {
+    const full = layout === 'full';
+    document.body.dataset.mapLayout = full ? 'full' : 'windowed';
+    this.mapLayoutButton.textContent = full ? 'Windowed' : 'Fullscreen';
+    this.mapLayoutButton.setAttribute('aria-pressed', String(full));
+    this.mapLayoutButton.setAttribute(
+      'aria-label',
+      full ? 'Switch to windowed map' : 'Switch to full-screen map',
+    );
   }
 
   setDifficulty(id) {

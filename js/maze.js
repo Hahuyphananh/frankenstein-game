@@ -1,10 +1,12 @@
 /**
  * Maze data and helpers.
  *
- * The layout is plain ASCII so it stays readable and editable:
- *   #  wall      .  bolt (pellet)      o  power cell      (space) empty
+ * The village is built from separated stone blocks with one-tile streets
+ * around every block. That deliberately creates multiple looping routes, so
+ * the Creature can circle a block instead of always taking one fixed path.
  *
- * Gameplay will consume the parsed tile grid; the renderer already draws it.
+ * Layout symbols:
+ *   #  wall      .  cobbled street
  */
 
 export const TILE = Object.freeze({
@@ -21,28 +23,38 @@ export const DIRECTIONS = Object.freeze({
   right: Object.freeze({ x: 1, y: 0, name: 'right' }),
 });
 
-/** A central corridor tile in the lower half of the maze. */
-export const PLAYER_SPAWN = Object.freeze({ col: 10, row: 12 });
+/** Bottom street, central enough to give Victor a fair start. */
+export const PLAYER_SPAWN = Object.freeze({ col: 12, row: 13 });
 
-/** Top-left corner of the maze, far from Victor's spawn. */
-export const CREATURE_SPAWN = Object.freeze({ col: 1, row: 1 });
+/** Elizabeth starts on the upper central street. */
+export const ELIZABETH_SPAWN = Object.freeze({ col: 12, row: 4 });
+
+/** All four village corners are streets and valid Creature spawns. */
+export const CORNER_SPAWNS = Object.freeze([
+  Object.freeze({ col: 1, row: 1 }),
+  Object.freeze({ col: 23, row: 1 }),
+  Object.freeze({ col: 1, row: 13 }),
+  Object.freeze({ col: 23, row: 13 }),
+]);
+
+export const CREATURE_SPAWN = CORNER_SPAWNS[0];
 
 export const MAZE_LAYOUT = Object.freeze([
-  '#####################',
-  '#.........#.........#',
-  '#.###.###.#.###.###.#',
-  '#o#.......#.......#o#',
-  '#.#.###.#####.###.#.#',
-  '#...#...#...#...#...#',
-  '###.#.#.###.#.#.#.###',
-  '#.....#...#...#.....#',
-  '#.###.#.#####.#.###.#',
-  '#o........#........o#',
-  '#...#...#...#...#...#',
-  '#.###.###.#.###.###.#',
-  '#.....#.......#.....#',
-  '#.###.#.#####.#.###.#',
-  '#####################',
+  '#########################',
+  '#.......................#',
+  '#.##.##.##.##.##.##.##..#',
+  '#.##.##.##.##.##.##.##..#',
+  '#.......................#',
+  '#.##.##.##.##.##.##.##..#',
+  '#.##.##.##.##.##.##.##..#',
+  '#.......................#',
+  '#.##.##.##.##.##.##.##..#',
+  '#.##.##.##.##.##.##.##..#',
+  '#.......................#',
+  '#.##.##.##.##.##.##.##..#',
+  '#.##.##.##.##.##.##.##..#',
+  '#.......................#',
+  '#########################',
 ]);
 
 const VALID_TILES = new Set(Object.values(TILE));
@@ -82,6 +94,19 @@ export function walkableNeighbors(maze, col, row) {
   return Object.values(DIRECTIONS).filter((direction) =>
     canMove(maze, col, row, direction),
   );
+}
+
+export function restoreMaze(maze, layout = MAZE_LAYOUT) {
+  if (!maze || layout.length !== maze.rows) {
+    throw new Error('restoreMaze: layout does not match the maze.');
+  }
+  layout.forEach((row, index) => {
+    if (row.length !== maze.columns) {
+      throw new Error(`restoreMaze: row ${index} has the wrong width.`);
+    }
+    maze.tiles[index].splice(0, maze.columns, ...row);
+  });
+  return maze;
 }
 
 export const MAZE = buildMaze();
