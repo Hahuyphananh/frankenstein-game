@@ -1,0 +1,50 @@
+# ---- OS / editor cruft ----
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.code-workspace
+
+# ---- secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Node / JS / TS ----
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+coverage/
+.vite/
+.parcel-cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- build output ----
+dist/
+build/
+out/
+
+# ---- game runtime state ----
+saves/
+*.save
+*.sav
