@@ -138,7 +138,7 @@ En Normal et en Difficile, `buildRiskField()` construit un champ de coût de typ
 
 ## Carte plein écran
 
-- Le niveau s’ouvre dans une vue immersive qui utilise toute la largeur et la hauteur disponible de l’écran, avec une interface compacte en surimpression. Le panneau de commandes compact réserve sa place en bas : la carte s’arrête au-dessus de lui et reste entièrement visible.
+- Le niveau s’ouvre dans une vue immersive qui remplit toute la largeur et la hauteur de l’écran, avec une interface compacte en surimpression. La carte est recadrée sur les murs extérieurs si nécessaire pour couvrir un écran de portable 16:9 ou 16:10, avec le panneau de commandes en surimpression.
 - Le bouton **Fenêtré** de l’interface, la touche `F`, ou les flèches **↙** et **↗** en bas à droite basculent entre la scène encadrée et le plein écran. La flèche active est mise en évidence ; le choix est conservé avec les autres réglages.
 - Sur petit écran, les libellés secondaires et le bouton de son de la scène sont masqués pour laisser toute la place au labyrinthe. Le bouton de carte devient **Carte**.
 - En mode Protection, l’indicateur de ruée et le compteur de murs restent visibles sur mobile. En mode 2 joueurs, la jauge de ruée est masquée.

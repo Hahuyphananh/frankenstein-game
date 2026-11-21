@@ -201,12 +201,12 @@ export class StageRenderer {
     this.buildWallLayer();
   }
 
-  /** Full view fills the space above the compact controls; windowed keeps every tile. */
+  /** Full view covers the viewport; windowed mode keeps every tile visible. */
   computeCamera() {
     const stage = this.screen === 'stage';
     const full = stage && this.mapLayout === 'full';
     const insets = full
-      ? { top: 0, right: 0, bottom: this.width < 540 ? 42 : 52, left: 0 }
+      ? { top: 0, right: 0, bottom: 0, left: 0 }
       : stage
         ? {
             top: Math.min(120, Math.round(this.height * 0.16)),
@@ -223,7 +223,7 @@ export class StageRenderer {
       rows: this.maze.rows,
       maxCell: stage ? (full ? 240 : 40) : 44,
       insets,
-      cover: false,
+      cover: full,
       fractional: full,
     });
   }

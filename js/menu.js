@@ -30,6 +30,7 @@ export class MenuView {
     this.radios = [...document.querySelectorAll('input[name="difficulty"]')];
     this.hudLabel = byId('hud-mode-label');
     this.hudTitle = byId('stage-title');
+    this.hudTitleWrap = this.hudTitle.closest('.hud__title-wrap');
     this.hudObjective = byId('stage-objective');
     this.stageMoveHint = byId('stage-move-hint');
     this.soundButtons = [...document.querySelectorAll('[data-sound-toggle]')];
@@ -128,6 +129,7 @@ export class MenuView {
     this.hudLabel.textContent = duel ? 'Duel local · une seule vie' : 'Village victorien · nuit';
     this.hudTitle.textContent = duel ? 'Duel local' : 'Protéger Elizabeth';
     this.hudTitle.hidden = duel;
+    this.hudTitleWrap.hidden = duel;
     this.hudObjective.textContent = duel
       ? 'Vous êtes la Créature : flèches pour bouger, WASD pour Victor. Sans ruée, atteignez Elizabeth avant d’être touché.'
       : 'La Créature traque Elizabeth. Épuisez ses trois vies avant qu’elle ne l’atteigne.';
