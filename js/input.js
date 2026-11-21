@@ -2,19 +2,35 @@
  * Keyboard state, subscriptions and movement key mapping.
  */
 
-const KEY_DIRECTIONS = Object.freeze({
-  ArrowUp: 'up',
+const WASD_DIRECTIONS = Object.freeze({
   KeyW: 'up',
-  ArrowDown: 'down',
   KeyS: 'down',
-  ArrowLeft: 'left',
   KeyA: 'left',
-  ArrowRight: 'right',
   KeyD: 'right',
+});
+
+const ARROW_DIRECTIONS = Object.freeze({
+  ArrowUp: 'up',
+  ArrowDown: 'down',
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
+});
+
+const KEY_DIRECTIONS = Object.freeze({
+  ...ARROW_DIRECTIONS,
+  ...WASD_DIRECTIONS,
 });
 
 export function directionForKey(code) {
   return KEY_DIRECTIONS[code] ?? null;
+}
+
+export function wasdDirectionForKey(code) {
+  return WASD_DIRECTIONS[code] ?? null;
+}
+
+export function arrowDirectionForKey(code) {
+  return ARROW_DIRECTIONS[code] ?? null;
 }
 
 export class Keyboard {

@@ -164,6 +164,46 @@ export function chooseStartPositions(maze, { rng = Math.random, previous = null 
   return Object.freeze({ creature, victor, elizabeth });
 }
 
+/**
+ * Duel placement: Elizabeth is close to the Creature's corner and Victor is
+ * placed far enough away that both players have a meaningful race.
+ */
+export function chooseDuelStartPositions(maze, { rng = Math.random, previous = null } = {}) {
+  const corners = CORNER_SPAWNS.filter((tile) => isWalkableTile(maze, tile.col, tile.row));
+  const streets = walkableTiles(maze);
+
+  const targetPool = streets.filter((tile) => !sameTile(tile, previous?.elizabeth));
+  const elizabeth =
+    pickTile(targetPool.length ? targetPool : streets, rng) ?? ELIZABETH_SPAWN;
+
+  const nearestCorners = [...corners].sort(
+    (a, b) => manhattan(a, elizabeth) - manhattan(b, elizabeth),
+  );
+  const freshCorners = nearestCorners
+    .slice(0, 2)
+    .filter((tile) => !sameTile(tile, previous?.creature));
+  const creature =
+    pickTile(freshCorners.length ? freshCorners : nearestCorners, rng) ?? CREATURE_SPAWN;
+
+  const victorPool = streets.filter(
+    (tile) =>
+      !sameTile(tile, creature) &&
+      !sameTile(tile, elizabeth) &&
+      !sameTile(tile, previous?.victor) &&
+      manhattan(tile, creature) >= 12 &&
+      manhattan(tile, elizabeth) >= 5,
+  );
+  const relaxedVictors = streets.filter(
+    (tile) =>
+      !sameTile(tile, creature) &&
+      !sameTile(tile, elizabeth) &&
+      manhattan(tile, creature) >= 10,
+  );
+  const victor = pickTile(victorPool.length ? victorPool : relaxedVictors, rng) ?? PLAYER_SPAWN;
+
+  return Object.freeze({ creature, victor, elizabeth });
+}
+
 export function restoreMaze(maze, layout = MAZE_LAYOUT) {
   if (!maze || layout.length !== maze.rows) {
     throw new Error('restoreMaze: layout does not match the maze.');

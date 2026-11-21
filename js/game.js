@@ -1,10 +1,16 @@
-import { CREATURE_RULES, DIFFICULTIES, isDifficulty } from './config.js';
-import { directionForKey } from './input.js';
+import { CREATURE_RULES, DIFFICULTIES, isDifficulty, isMode } from './config.js';
+import { arrowDirectionForKey, directionForKey, wasdDirectionForKey } from './input.js';
 import { GameLoop } from './loop.js';
-import { CORNER_SPAWNS, TILE, chooseStartPositions, restoreMaze } from './maze.js';
+import {
+  CORNER_SPAWNS,
+  TILE,
+  chooseDuelStartPositions,
+  chooseStartPositions,
+  restoreMaze,
+} from './maze.js';
 import { MenuView } from './menu.js';
 import { Player } from './player.js';
-import { StoryCreature, StoryLevel } from './story.js';
+import { DUEL_RULES, PlayerCreature, StoryCreature, StoryLevel } from './story.js';
 import { CountdownTimer, starsForTime } from './timer.js';
 
 /**
@@ -19,6 +25,7 @@ export class Game {
     this.keyboard = keyboard;
     this.maze = maze;
     this.persist = persist;
+    this.mode = settings.mode === 'creature' ? 'creature' : 'guardian';
     this.screen = 'menu';
     this.stageStatus = 'idle';
     this.player = null;
@@ -35,6 +42,7 @@ export class Game {
       onPlayAgain: () => this.restart(),
       onBack: () => this.backToMenu(),
       onResume: () => this.resume(),
+      onMode: (id) => this.setMode(id),
       onDifficulty: (id) => this.setDifficulty(id),
       onSound: () => this.toggleSound(),
       onMapLayout: () => this.toggleMapLayout(),
@@ -66,7 +74,22 @@ export class Game {
     this.syncTimer(now);
 
     if (this.timer.remaining(now) <= 0) {
-      this.loseLevel(now);
+      if (this.mode === 'creature') this.finishCreatureRun('timeout', now);
+      else this.loseLevel(now);
+      return;
+    }
+
+    if (this.mode === 'creature') {
+      this.player.update(dt);
+      this.story?.update(dt, { creature: this.creature });
+      this.creature.update(dt, { victor: this.player, goal: this.story?.goal });
+
+      // A Creature victory takes priority in a same-frame collision.
+      if (this.story?.creatureReachedElizabeth(this.creature)) {
+        this.finishCreatureRun('creature', now);
+        return;
+      }
+      if (this.creature.touches(this.player)) this.finishCreatureRun('victor', now);
       return;
     }
 
@@ -97,33 +120,62 @@ export class Game {
   /** Create a fresh run: new actors, full lives, fresh countdown. */
   startRun() {
     const difficulty = DIFFICULTIES[this.settings.difficulty] ?? DIFFICULTIES.normal;
+    const mode = this.settings.mode === 'creature' ? 'creature' : 'guardian';
 
     restoreMaze(this.maze);
     this.renderer.refreshMaze();
+    this.mode = mode;
     this.currentDifficulty = difficulty;
     this.stageStatus = 'playing';
-    const starts = chooseStartPositions(this.maze, { previous: this.lastStarts });
+    const starts =
+      mode === 'creature'
+        ? chooseDuelStartPositions(this.maze, { previous: this.lastStarts })
+        : chooseStartPositions(this.maze, { previous: this.lastStarts });
     this.lastStarts = starts;
     this.player = new Player({
       maze: this.maze,
       spawn: starts.victor,
       speed: difficulty.playerSpeed,
     });
-    this.story = new StoryLevel({ maze: this.maze, elizabeth: starts.elizabeth });
-    this.creature = new StoryCreature({
+    this.story = new StoryLevel({
       maze: this.maze,
-      spawn: starts.creature,
-      spawnPoints: CORNER_SPAWNS,
-      profile: difficulty.creature,
-      rules: CREATURE_RULES,
-      onWallBreak: (wall) => this.wallBroken(wall),
+      elizabeth: starts.elizabeth,
+      rules: mode === 'creature' ? DUEL_RULES : undefined,
     });
+
+    if (mode === 'creature') {
+      this.creature = new PlayerCreature({
+        maze: this.maze,
+        spawn: starts.creature,
+        spawnPoints: CORNER_SPAWNS,
+        profile: {
+          ...difficulty.creature,
+          speed: difficulty.playerSpeed,
+          dashCooldown: 0,
+          dashDuration: 0,
+          dashMultiplier: 1,
+          destroyWalls: false,
+          pathRecognition: false,
+        },
+        rules: { ...CREATURE_RULES, lives: 1 },
+      });
+    } else {
+      this.creature = new StoryCreature({
+        maze: this.maze,
+        spawn: starts.creature,
+        spawnPoints: CORNER_SPAWNS,
+        profile: difficulty.creature,
+        rules: CREATURE_RULES,
+        onWallBreak: (wall) => this.wallBroken(wall),
+      });
+    }
     this.timer = new CountdownTimer({ limitSeconds: difficulty.timeLimit });
     this.timer.start(performance.now());
     this.displayedSecond = difficulty.timeLimit;
 
     this.view.hidePause();
     this.view.hideStageResult();
+    this.view.setStageMode(mode);
     this.view.setTimer(difficulty.timeLimit, difficulty.timeLimit);
     this.view.setCreatureLives(this.creature.lives, this.creature.maxLives);
     this.syncCreaturePower();
@@ -138,17 +190,17 @@ export class Game {
     this.audio.play('confirm');
   }
 
-  /** Keep the dash meter and Hard wall-break state in the stage HUD. */
+  /** Keep the dash meter and wall-break count in the stage HUD. */
   syncCreaturePower() {
     const creature = this.creature;
     if (!creature) return;
     this.view.setCreaturePower({
+      enabled: this.mode === 'guardian',
       cooldown: creature.dashCooldownRemaining,
       limit: creature.profile.dashCooldown ?? 0,
       dashing: creature.dashing,
       canBreakWalls: Boolean(creature.profile.destroyWalls),
-      wallBreakAvailable: creature.wallBreakAvailable,
-      wallBreakPerLife: Boolean(creature.profile.wallBreakPerLife),
+      wallsBroken: creature.wallsBrokenThisDash,
     });
   }
 
@@ -253,13 +305,58 @@ export class Game {
     this.audio.play('lose');
   }
 
+  /** Resolve the local duel with the reverse win conditions of the story mode. */
+  finishCreatureRun(cause, now = performance.now()) {
+    if (this.stageStatus !== 'playing') return;
+
+    const endings = {
+      creature: 'creatureWin',
+      victor: 'creatureCaught',
+      timeout: 'creatureTimeout',
+    };
+    const ending = endings[cause];
+    if (!ending) return;
+
+    const won = cause === 'creature';
+    this.stageStatus = won ? 'won' : 'lost';
+    const elapsedMs = this.timer.stop(now);
+    const story = this.story?.resolve(ending) ?? null;
+
+    this.freezeActors();
+    if (cause === 'timeout') {
+      this.displayedSecond = 0;
+      this.view.setTimer(0, this.currentDifficulty.timeLimit);
+    } else {
+      this.syncTimer(now);
+    }
+    if (cause === 'victor') this.view.setCreatureLives(0, this.creature.maxLives);
+
+    this.lastResult = {
+      outcome: won ? 'won' : 'lost',
+      mode: 'creature',
+      difficulty: this.currentDifficulty.id,
+      elapsedMs,
+      stars: 0,
+      cause,
+      story: story?.ending ?? null,
+    };
+    this.view.showStageResult({
+      outcome: won ? 'won' : 'lost',
+      elapsedMs,
+      stars: 0,
+      story,
+      showStars: false,
+    });
+    this.audio.play(won ? 'win' : 'lose');
+  }
+
   freezeActors() {
     if (this.player) this.player.moving = false;
     if (this.creature) this.creature.moving = false;
     if (this.story?.elizabeth) this.story.elizabeth.moving = false;
   }
 
-  /** Hard-mode dash shattered a wall; refresh terrain and all path caches. */
+  /** A dashing Creature shattered a wall; refresh terrain and path caches. */
   wallBroken(wall) {
     this.maze.tiles[wall.row][wall.col] = TILE.EMPTY;
     this.renderer.refreshMaze();
@@ -288,6 +385,15 @@ export class Game {
     this.view.showScreen('menu');
     this.renderer.setScreen('menu');
     this.audio.play('back');
+  }
+
+  setMode(id) {
+    if (!isMode(id)) return;
+    this.settings.mode = id;
+    this.mode = id;
+    this.view.setMode(id);
+    this.audio.play('move');
+    this.persist(this.settings);
   }
 
   setDifficulty(id) {
@@ -341,6 +447,23 @@ export class Game {
       if (event.key === 'Escape') {
         event.preventDefault();
         this.backToMenu();
+        return;
+      }
+
+      if (this.mode === 'creature') {
+        const victorDirection = wasdDirectionForKey(event.code);
+        if (victorDirection) {
+          event.preventDefault();
+          if (this.stageStatus === 'playing') this.player?.requestDirection(victorDirection);
+        }
+
+        const creatureDirection = arrowDirectionForKey(event.code);
+        if (creatureDirection) {
+          event.preventDefault();
+          if (this.stageStatus === 'playing') {
+            this.creature?.requestDirection(creatureDirection);
+          }
+        }
         return;
       }
 

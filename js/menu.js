@@ -22,11 +22,19 @@ export class MenuView {
     };
     this.playButton = byId('btn-play');
     this.instructionsButton = byId('btn-instructions');
+    this.modeHint = byId('mode-hint');
     this.difficultyHint = byId('difficulty-hint');
     this.difficultyChip = byId('stage-difficulty');
     this.mapLayoutButton = byId('btn-map-layout');
     this.dialog = byId('instructions-dialog');
+    this.modeRadios = [...document.querySelectorAll('input[name="mode"]')];
     this.radios = [...document.querySelectorAll('input[name="difficulty"]')];
+    this.hudLabel = byId('hud-mode-label');
+    this.hudTitle = byId('stage-title');
+    this.hudObjective = byId('stage-objective');
+    this.stageMoveHint = byId('stage-move-hint');
+    this.currentMode = 'guardian';
+    this.currentDifficulty = 'normal';
     this.soundButtons = [...document.querySelectorAll('[data-sound-toggle]')];
     this.soundLabels = [...document.querySelectorAll('[data-sound-label]')];
     this.creatureLives = byId('stage-lives');
@@ -40,6 +48,8 @@ export class MenuView {
     this.resultStarsGroup = byId('result-stars');
     this.resultEpilogue = byId('result-epilogue');
     this.resultStars = [...this.resultStarsGroup.querySelectorAll('.star')];
+    this.resultStats = this.resultStarsGroup.closest('.result-stats');
+    this.resultStarsStat = this.resultStarsGroup.closest('.result-stat');
     this.pauseOverlay = byId('stage-pause');
     this.resumeButton = byId('btn-resume');
     this.timerElement = byId('stage-timer');
@@ -70,6 +80,12 @@ export class MenuView {
     byId('btn-close-instructions').addEventListener('click', () => this.dialog.close());
     byId('btn-close-instructions-2').addEventListener('click', () => this.dialog.close());
 
+    this.modeRadios.forEach((radio) => {
+      radio.addEventListener('change', () => {
+        if (radio.checked) handlers.onMode?.(radio.value);
+      });
+    });
+
     this.radios.forEach((radio) => {
       radio.addEventListener('change', () => {
         if (radio.checked) handlers.onDifficulty?.(radio.value);
@@ -87,12 +103,40 @@ export class MenuView {
   }
 
   applySettings(settings) {
+    this.modeRadios.forEach((radio) => {
+      radio.checked = radio.value === settings.mode;
+    });
     this.radios.forEach((radio) => {
       radio.checked = radio.value === settings.difficulty;
     });
+    this.setMode(settings.mode);
     this.setDifficulty(settings.difficulty);
     this.setSound(settings.sound);
     this.setMapLayout(settings.mapLayout);
+  }
+
+  setMode(id) {
+    this.currentMode = id === 'creature' ? 'creature' : 'guardian';
+    document.body.dataset.mode = this.currentMode;
+    this.modeHint.textContent =
+      this.currentMode === 'creature'
+        ? 'Duel local à deux : flèches pour la Créature, WASD pour Victor. Une seule vie, sans ruée.'
+        : 'Victor protège Elizabeth. Déplacez-le avec WASD ou les flèches.';
+    if (this.currentDifficulty) this.setDifficulty(this.currentDifficulty);
+  }
+
+  /** The stage objective, controls and power panel follow the selected mode. */
+  setStageMode(mode) {
+    const duel = mode === 'creature';
+    this.hudLabel.textContent = duel ? 'Duel local · une seule vie' : 'Village victorien · nuit';
+    this.hudTitle.textContent = duel ? 'Atteindre Elizabeth' : 'Protéger Elizabeth';
+    this.hudObjective.textContent = duel
+      ? 'Vous êtes la Créature : flèches pour bouger, WASD pour Victor. Sans ruée, atteignez Elizabeth avant d’être touché.'
+      : 'La Créature traque Elizabeth. Épuisez ses trois vies avant qu’elle ne l’atteigne.';
+    this.stageMoveHint.innerHTML = duel
+      ? '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Victor</span><span class="stage-bar__keys"><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></span><span>Créature</span>'
+      : '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ou les flèches pour déplacer Victor</span>';
+    this.powerElement.hidden = duel;
   }
 
   setMapLayout(layout) {
@@ -109,7 +153,11 @@ export class MenuView {
   setDifficulty(id) {
     const difficulty = DIFFICULTIES[id];
     if (!difficulty) return;
-    this.difficultyHint.textContent = difficulty.hint;
+    this.currentDifficulty = id;
+    this.difficultyHint.textContent =
+      this.currentMode === 'creature'
+        ? `Duel local : ${difficulty.playerSpeed} cases/s pour les deux, ${difficulty.timeLimit} s et une seule vie pour la Créature.`
+        : difficulty.hint;
     this.difficultyChip.textContent = difficulty.label;
     this.difficultyChip.dataset.level = difficulty.id;
   }
@@ -165,13 +213,16 @@ export class MenuView {
   }
 
   setCreaturePower({
+    enabled = true,
     cooldown = 0,
     limit = 0,
     dashing = false,
     canBreakWalls = false,
-    wallBreakAvailable = false,
-    wallBreakPerLife = false,
+    wallsBroken = 0,
   } = {}) {
+    this.powerElement.hidden = !enabled;
+    if (!enabled) return;
+
     const remaining = Math.max(0, cooldown);
     const progress = dashing
       ? 1
@@ -180,7 +231,10 @@ export class MenuView {
         : 1;
     const value = dashing ? 'Active' : remaining > 0.05 ? `${Math.ceil(remaining)} s` : 'Prêt';
     const state = dashing ? 'active' : remaining > 0.05 ? 'cooling' : 'ready';
-    const wallText = wallBreakAvailable ? 'Mur : prêt' : 'Mur : utilisé';
+    const wallText =
+      wallsBroken > 0
+        ? `Murs : ${wallsBroken} brisé${wallsBroken > 1 ? 's' : ''}`
+        : 'Murs : brisables';
     const key = `${value}|${state}|${Math.round(progress * 25)}|${canBreakWalls}|${wallText}`;
     if (key === this.powerKey) return;
     this.powerKey = key;
@@ -200,10 +254,8 @@ export class MenuView {
     this.wallState.hidden = !canBreakWalls;
     if (canBreakWalls) {
       this.wallState.textContent = wallText;
-      this.wallState.classList.toggle('is-spent', !wallBreakAvailable);
-      this.wallState.title = wallBreakPerLife
-        ? 'Un mur peut être brisé par vie en mode Difficile.'
-        : 'Disponible à la prochaine ruée.';
+      this.wallState.classList.toggle('is-spent', wallsBroken > 0);
+      this.wallState.title = 'Chaque mur traversé pendant une ruée est brisé.';
     }
   }
 
@@ -216,7 +268,13 @@ export class MenuView {
     this.pauseOverlay.hidden = true;
   }
 
-  showStageResult({ outcome = 'won', elapsedMs = 0, stars = 0, story = null } = {}) {
+  showStageResult({
+    outcome = 'won',
+    elapsedMs = 0,
+    stars = 0,
+    story = null,
+    showStars = true,
+  } = {}) {
     const lost = outcome === 'lost';
     const title = this.stageResult.querySelector('#stage-result-title');
     const copy = this.stageResult.querySelector('#stage-result-copy');
@@ -239,6 +297,8 @@ export class MenuView {
 
     this.resultTimeLabel.textContent = lost ? 'Temps survécu' : 'Temps réalisé';
     this.resultTime.textContent = formatTime(elapsedMs / 1000);
+    this.resultStarsStat.hidden = !showStars;
+    this.resultStats.classList.toggle('result-stats--single', !showStars);
     this.resultStars.forEach((star, index) => {
       star.classList.toggle('is-earned', index < stars);
     });

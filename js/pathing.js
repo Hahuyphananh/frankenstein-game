@@ -107,6 +107,52 @@ export function buildRiskField(
  * tile. Used to judge whether a candidate move leads to an escape route or
  * into a pocket.
  */
+export function buildDashField(maze, origin) {
+  const size = maze.columns * maze.rows;
+  const distances = new Int16Array(size).fill(-1);
+  if (
+    !origin ||
+    origin.col <= 0 ||
+    origin.row <= 0 ||
+    origin.col >= maze.columns - 1 ||
+    origin.row >= maze.rows - 1
+  ) {
+    return distances;
+  }
+
+  const start = origin.row * maze.columns + origin.col;
+  distances[start] = 0;
+  const queue = [start];
+
+  for (let head = 0; head < queue.length; head += 1) {
+    const index = queue[head];
+    const col = index % maze.columns;
+    const row = (index - col) / maze.columns;
+    const nextDistance = distances[index] + 1;
+
+    for (const direction of CARDINALS) {
+      const nextCol = col + direction.x;
+      const nextRow = row + direction.y;
+      if (
+        nextCol <= 0 ||
+        nextRow <= 0 ||
+        nextCol >= maze.columns - 1 ||
+        nextRow >= maze.rows - 1
+      ) {
+        continue;
+      }
+
+      const nextIndex = nextRow * maze.columns + nextCol;
+      if (distances[nextIndex] !== -1) continue;
+
+      distances[nextIndex] = nextDistance;
+      queue.push(nextIndex);
+    }
+  }
+
+  return distances;
+}
+
 export function maxDistanceInRange(maze, field, start, depth) {
   if (depth <= 0) return fieldDistance(field, maze, start.col, start.row);
 

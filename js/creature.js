@@ -18,9 +18,9 @@ function pick(list, rng) {
 /**
  * The Creature. All tuning lives in the difficulty profile from config.js.
  *
- * Dash: a short burst of speed when the target is nearby. The profile owns
- * the cooldown (10 seconds on Normal) and, on Hard, whether the dash can
- * shatter one wall. Respawn always selects a different walkable corner.
+ * Dash: a burst of speed that starts whenever the cooldown is ready and the
+ * dash traverses walls on its way. Respawn always selects a different
+ * walkable corner.
  */
 export class Creature extends GridActor {
   constructor({
@@ -49,8 +49,8 @@ export class Creature extends GridActor {
     this.lastRespawn = Object.freeze({ col: spawn.col, row: spawn.row });
     this.usedRespawns = new Set([`${spawn.col},${spawn.row}`]);
     this.dashFor = 0;
-    this.dashCooldownFor = 0;
-    this.wallBreakAvailable = Boolean(profile.destroyWalls);
+    this.dashCooldownFor = profile.dashCooldown ?? 0;
+    this.wallsBrokenThisDash = 0;
   }
 
   reset() {
@@ -59,8 +59,9 @@ export class Creature extends GridActor {
     this.distanceField = null;
     this.invulnerableFor = 0;
     this.dashFor = 0;
+    this.dashCooldownFor = this.profile?.dashCooldown ?? 0;
     this.speed = this.baseSpeed ?? this.profile?.speed ?? this.speed;
-    this.wallBreakAvailable = Boolean(this.profile?.destroyWalls);
+    this.wallsBrokenThisDash = 0;
   }
 
   get invulnerable() {
@@ -89,13 +90,14 @@ export class Creature extends GridActor {
 
     this.lives -= 1;
     this.dashFor = 0;
+    this.dashCooldownFor = this.profile.dashCooldown ?? 0;
+    this.wallsBrokenThisDash = 0;
     this.speed = this.baseSpeed;
 
     const corner = this.nextRespawnCorner(victor);
     this.teleportTo(corner);
     this.lastRespawn = Object.freeze({ col: corner.col, row: corner.row });
     this.usedRespawns.add(`${corner.col},${corner.row}`);
-    this.wallBreakAvailable = Boolean(this.profile.destroyWalls);
     this.invalidatePathing();
     this.invulnerableFor = this.rules.respawnInvulnerability;
     return true;
@@ -147,20 +149,13 @@ export class Creature extends GridActor {
       return false;
     }
 
-    const goal = context?.goal;
-    if (!goal) return false;
-    const distance = Math.hypot(goal.col + 0.5 - this.x, goal.row + 0.5 - this.y);
-    return distance > 1.15 && distance <= (this.profile.dashRange ?? 7);
+    return Boolean(context?.goal);
   }
 
   beginDash() {
     this.dashFor = this.profile.dashDuration ?? 0.5;
     this.dashCooldownFor = this.profile.dashCooldown;
-    // A per-life wall break is armed at spawn and after a respawn, not on
-    // every dash. This keeps Hard's masonry damage bounded per run.
-    if (!this.profile.wallBreakPerLife) {
-      this.wallBreakAvailable = Boolean(this.profile.destroyWalls);
-    }
+    this.wallsBrokenThisDash = 0;
   }
 
   chooseDirection(context) {

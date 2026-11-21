@@ -6,20 +6,32 @@ Inspiré du roman *Frankenstein* de Mary Shelley.
 
 **Version en ligne :** https://hahuyphananh.github.io/frankenstein-game/
 
-**État : un niveau jouable.** La Créature traque Elizabeth dans un village victorien tandis que Victor tente de la capturer. Elizabeth se déplace dans les rues en boucle et fuit lorsque la Créature approche. Si Victor épuise les trois vies de la Créature, Elizabeth et Justine sont sauves. Sinon, la tragédie du roman se produit.
+**État : un niveau jouable, en solo ou en duel local.** Dans **Protéger Elizabeth**, la Créature traque Elizabeth tandis que Victor tente de la capturer. Dans **Jouer la Créature**, deux joueurs partagent le clavier : Victor défend Elizabeth avec WASD, la Créature la poursuit avec les flèches. Elizabeth se déplace dans les rues en boucle et fuit lorsque la Créature approche. Si Victor épuise les trois vies de la Créature, Elizabeth et Justine sont sauves. Sinon, la tragédie du roman se produit.
 
 ## Fonctionnalités
 
 - Un niveau complet dans un village gothique dessiné au canvas.
+- **Protéger Elizabeth** : mode solo où Victor, contrôlé avec WASD ou les flèches, doit capturer trois fois la Créature avant qu’elle n’atteigne Elizabeth.
+- **Jouer la Créature** : duel local à deux joueurs, Victor au WASD et la Créature aux flèches. La Créature n’a qu’une vie, ne peut pas effectuer de ruée et se déplace à la même vitesse que Victor.
 - Trois difficultés avec des vitesses, des ruées et des intelligences différentes.
 - Elizabeth mobile : elle marche lentement, explore les rues et fuit la Créature.
-- Trois vies pour la Créature, avec réapparition dans un coin différent après chaque contact.
-- Ruée automatique de la Créature, avec indicateur de recharge dans l’interface.
-- En Difficile, un mur peut être brisé par vie ; l’indicateur précise s’il est prêt ou utilisé.
+- Trois vies pour la Créature en mode Protection, avec réapparition dans un coin différent après chaque contact.
+- Ruée automatique de la Créature dès que sa recharge est prête, sans condition de portée, avec indicateur de recharge dans l’interface.
+- La ruée est plus rapide et plus longue, et brise **tous les murs** qu’elle traverse, dans les trois difficultés.
+- Elizabeth est invulnérable pendant les quatre secondes de protection qui suivent la réapparition de la Créature.
 - Positions de départ aléatoires pour Victor, Elizabeth et la Créature ; chaque nouvelle partie et chaque Recommencer évite de reprendre exactement les mêmes cases.
 - Carte en plein écran par défaut, avec bascule vers une carte en fenêtre.
 - Interface, textes du récit, consignes et documentation entièrement en français.
 - Aucune dépendance, aucun appel réseau et aucune clé d’API.
+
+## Modes
+
+| Mode | Joueurs | Objectif |
+| ---- | ------- | -------- |
+| **Protéger Elizabeth** | 1 joueur | Contrôler Victor avec WASD ou les flèches et capturer trois fois la Créature avant qu’elle n’atteigne Elizabeth. |
+| **Jouer la Créature** | 2 joueurs sur le même clavier | La Créature (flèches) doit atteindre Elizabeth avant que Victor (WASD) ne la touche. Une seule vie et aucune ruée ; les deux personnages vont à la même vitesse. |
+
+En mode Jouer la Créature, Elizabeth morte donne la victoire à la Créature ; un contact avec Victor ou un temps écoulé donne la victoire à Victor. Le mode choisi est conservé avec les autres réglages.
 
 ## Structure du projet
 
@@ -36,16 +48,16 @@ js/
   actor.js          Déplacement commun, sûr et aligné sur la grille
   player.js         Contrôleur de Victor et virages mémorisés
   creature.js       Créature de base, ruée, bris de mur et réapparitions
-  story.js          Elizabeth, récits et Créature à intelligence variable
-  pathing.js        Champs de distance, champ de risque et prévision
+  story.js          Elizabeth, récits, Créature à intelligence variable et Créature manuelle
+  pathing.js        Champs de distance, champ de risque et champ de ruée à travers les murs
   timer.js          Compte à rebours, score par étoiles et formatage
   sprites.js        Art de pixels, orientations et portraits des personnages
   renderer.js       Canvas : rues, lueurs, acteurs, ruée et impacts
   loop.js           Boucle requestAnimationFrame avec delta limité
-  game.js           Machine à états, temps, vies, pause et résultats
+  game.js           Machine à états, modes, temps, vies, pause et résultats
   menu.js           Contrôleur du menu, de l’interface et des overlays
   audio.js          Sons synthétisés de l’interface et du jeu
-  input.js          Clavier et correspondance WASD / flèches
+  input.js          Clavier, correspondance WASD / flèches et contrôles séparés du duel
   storage.js        Sauvegarde locale protégée des réglages
 ```
 
@@ -66,13 +78,25 @@ js/
 ## Le niveau du village
 
 - Le labyrinthe est une grille de 25×15 formée de blocs de pierre séparés. Chaque bloc possède une rue d’une case sur son pourtour, ce qui crée de nombreux circuits et permet à la Créature de contourner un pâté de maisons.
-- **Elizabeth** avance à `1,3` case par seconde. Elle erre dans les rues et, lorsque la Créature entre dans un rayon de `7` cases, elle utilise un champ de distance pour choisir la direction qui laisse le plus de rues entre elles.
+- **Elizabeth** avance à `3,2` cases/s en mode Protection et à `1,8` case/s dans le duel. Elle erre dans les rues et, lorsque la Créature entre dans un rayon de `7` cases, elle utilise un champ de distance pour choisir la direction qui laisse le plus de rues entre elles.
 - La Créature est une `StoryCreature` spécifique au niveau. Son comportement dépend de la difficulté.
-- Victor doit épuiser les trois vies de la Créature.
+- En mode **Protéger Elizabeth**, Victor doit épuiser les trois vies de la Créature.
+- En mode **Jouer la Créature**, le joueur incarné est une `PlayerCreature` : elle avance aux flèches, possède une seule vie, ne peut pas déclencher de ruée et utilise la vitesse de Victor.
 - **Si la Créature atteint Elizabeth :** Elizabeth meurt. Justine Moritz est plus tard exécutée après avoir été faussement accusée de son meurtre. Justine n’est pas physiquement tuée par la Créature.
-- **Si Victor capture la Créature :** Elizabeth survit et Justine n’est jamais accusée.
-- Si le temps s’épuise, la Créature atteint Elizabeth et la même tragédie se produit.
-- L’écran de résultat affiche l’issue, le temps, les étoiles et un bouton **Recommencer**.
+- **Si Victor capture la Créature en mode Protection :** Elizabeth survit et Justine n’est jamais accusée.
+- **En duel :** un contact de Victor met fin à l’unique vie de la Créature et donne la victoire à Victor. Atteindre Elizabeth donne la victoire au joueur qui contrôle la Créature.
+- Si le temps s’épuise en mode Protection, la Créature atteint Elizabeth et la même tragédie se produit. En duel, le temps écoulé donne la victoire à Victor.
+- L’écran de résultat affiche l’issue, le temps et un bouton **Recommencer**. Les étoiles sont réservées au mode Protection.
+
+## Vitesses
+
+| Difficulté | Créature | Victor |
+| ---------- | -------- | ------ |
+| Facile | 1,4 case/s | 5 cases/s |
+| Normal | 1,7 case/s | 5 cases/s |
+| Difficile | 1,8 case/s | 5,6 cases/s |
+
+La vitesse de base de la Créature augmente légèrement à chaque difficulté, mais reste très inférieure à celle de Victor. La pression vient surtout de la ruée et du bris de murs, pas d’une course permanente. En mode **Jouer la Créature**, les deux personnages utilisent `playerSpeed` : 5 cases/s en Facile et en Normal, 5,6 en Difficile. Elizabeth y utilise une vitesse réduite afin que la Créature, qui n’a pas de ruée, puisse la rattraper.
 
 ## Intelligence de la Créature
 
@@ -90,31 +114,34 @@ En Normal et en Difficile, `buildRiskField()` construit un champ de coût de typ
 
 | Difficulté | Temps | Recharge de la ruée | Murs |
 | ---------- | ----- | ------------------- | ---- |
-| Facile | 120 s | 16 s | Non |
-| Normal | 90 s | **10 s** | Non |
-| Difficile | 60 s | 8 s | **Un mur par vie** |
+| Facile | 120 s | 10 s | Tous les murs traversés |
+| Normal | 90 s | **5 s** | Tous les murs traversés |
+| Difficile | 60 s | **2 s** | Tous les murs traversés |
 
-- La Créature déclenche automatiquement une ruée lorsque Elizabeth est à portée et que la recharge est terminée. Sa vitesse augmente temporairement et laisse des silhouettes derrière elle.
-- En Difficile, une vie permet de briser un mur adjacent. L’ouverture reste jusqu’à la fin de la partie et toutes les mémoires de chemin sont reconstruites.
-- Le bris de mur n’est pas rechargeable à chaque ruée : il faut perdre une vie pour en obtenir un nouveau.
-- L’interface affiche l’état de la ruée (**Prêt**, **Actif** ou le nombre de secondes restantes) ainsi que l’état du mur (**Mur : prêt** ou **Mur : utilisé**).
+- Au lancement et après chaque réapparition, la recharge démarre pleine : la première ruée attend 10 s en Facile, 5 s en Normal et 2 s en Difficile. Ensuite, la Créature déclenche automatiquement une ruée dès que la recharge est terminée, sans condition de portée ; la recharge est la seule limite.
+- Une ruée dure `1,2` seconde et multiplie la vitesse par `3`. Elle laisse des silhouettes derrière elle.
+- Pendant la ruée, la Créature suit le chemin le plus court en ignorant les murs et brise **chaque mur qu’elle traverse**, dans les trois difficultés. Plusieurs murs peuvent tomber pendant une même ruée.
+- Les ouvertures restent jusqu’à la fin de la partie. Toutes les mémoires de chemin sont reconstruites après chaque bris.
+- Il n’y a plus de limite d’un mur par vie : le bris est lié à la ruée, pas aux réapparitions.
+- L’interface affiche l’état de la ruée (**Prêt**, **Actif** ou le nombre de secondes restantes) ainsi que le nombre de murs brisés pendant la dernière ruée (**Murs : brisables** ou **Murs : N brisés**). La jauge est masquée en mode Jouer la Créature, puisque la Créature ne peut pas y effectuer de ruée.
 - **Recommencer** restaure les murs et recrée tous les acteurs.
-- Lorsqu’elle est touchée, la Créature réapparaît dans un coin différent : `(1,1)`, `(23,1)`, `(1,13)` ou `(23,13)`. Chaque vie utilise un coin distinct tant que des alternatives existent.
+- Lorsqu’elle est touchée en mode Protection, la Créature réapparaît dans un coin différent : `(1,1)`, `(23,1)`, `(1,13)` ou `(23,13)`. Chaque vie utilise un coin distinct tant que des alternatives existent. La recharge de ruée repart alors à zéro. Pendant les quatre secondes de protection, Elizabeth est également invulnérable.
 
 ## Positions de départ
 
-- Au lancement d’une partie, la Créature apparaît dans un coin aléatoire.
-- Victor et Elizabeth apparaissent sur des cases de rue aléatoires, à distance de la Créature et l’un de l’autre.
-- La fonction `chooseStartPositions()` mémorise la partie précédente et évite de replacer chaque personnage sur exactement la même case au Recommencer.
+- En mode Protection, la Créature apparaît dans un coin aléatoire. Victor et Elizabeth apparaissent sur des cases de rue aléatoires, à distance de la Créature et l’un de l’autre.
+- `chooseStartPositions()` mémorise la partie précédente et évite de replacer chaque personnage sur exactement la même case au Recommencer.
+- En mode Jouer la Créature, `chooseDuelStartPositions()` place la Créature dans l’un des deux coins les plus proches d’Elizabeth, puis Victor à au moins 10 cases de la Créature. Le duel commence ainsi avec une course réelle plutôt qu’avec un avantage écrasant pour Victor.
 - Les trois personnages ne partagent jamais la même case au départ.
 - La réapparition de la Créature après un contact reste séparée de la position de Victor.
+- En mode Jouer la Créature, il n’y a qu’une seule vie et aucune réapparition : le premier contact avec Victor termine la partie.
 
 ## Carte plein écran
 
 - Le niveau s’ouvre dans une vue immersive qui remplit la fenêtre, avec une interface compacte en surimpression.
 - Le bouton **Fenêtré** de l’interface, ou la touche `F`, bascule vers la scène encadrée. Le bouton affiche alors **Plein écran** ; le choix est conservé avec les autres réglages.
 - Sur petit écran, les libellés secondaires et le bouton de son de la scène sont masqués pour laisser toute la place au labyrinthe. Le bouton de carte devient **Carte**.
-- L’indicateur de ruée et l’indicateur de mur restent visibles sur mobile.
+- En mode Protection, l’indicateur de ruée et le compteur de murs restent visibles sur mobile. En mode Jouer la Créature, la jauge de ruée est masquée.
 
 ## Temps et score
 
@@ -127,28 +154,32 @@ En Normal et en Difficile, `buildRiskField()` construit un champ de coût de typ
 - Le chronomètre démarre au lancement de la partie et s’affiche dans l’interface.
 - `P` met la partie en pause ; le temps est gelé et reprend au clic sur **Reprendre**.
 - Le temps s’arrête à la fin de la partie, victoire ou défaite.
-- Une victoire enregistre `game.lastResult` avec les millisecondes exactes, le nombre d’étoiles et l’issue du récit.
+- Une victoire en mode Protection enregistre `game.lastResult` avec les millisecondes exactes, le nombre d’étoiles et l’issue du récit. En duel, le résultat enregistre le mode et le camp vainqueur, sans étoiles.
 - Le temps utilise `performance.now()` plutôt que l’addition des deltas de frames.
 
 ## Boucle de capture
 
 - Victor est invulnérable ; la Créature possède les vies.
-- Chaque vague commence avec **3 vies** (`CREATURE_RULES.lives`).
-- Un contact retire une vie, téléporte la Créature dans un autre coin et accorde **2 secondes** d’invulnérabilité.
+- En mode Protection, chaque partie commence avec **3 vies** (`CREATURE_RULES.lives`). En mode Jouer la Créature, la Créature possède **1 vie**.
+- Un contact retire une vie, téléporte la Créature dans un autre coin et accorde **4 secondes** d’invulnérabilité.
+- Pendant ces quatre secondes, Elizabeth est aussi invulnérable : la Créature ne peut pas la tuer avant la fin de sa protection de réapparition.
 - Les collisions utilisent une distance en cases (`CREATURE_RULES.hitDistance`). L’invulnérabilité est activée avant la frame suivante, ce qui empêche un seul chevauchement de retirer plusieurs vies.
-- Les anciennes stratégies `wander`, `evade` et `outwit` restent disponibles dans `creature.js` ; le niveau du village utilise la sous-classe `StoryCreature`.
+- En duel, le contact avec Victor ne retire pas de vie : il termine immédiatement la partie au profit de Victor.
+- Les anciennes stratégies `wander`, `evade` et `outwit` restent disponibles dans `creature.js` ; le niveau du village utilise la sous-classe `StoryCreature`, et le duel utilise `PlayerCreature`.
 
 ## Équilibrage
 
-Les simulations finales ont été lancées avec les positions de départ aléatoires et l’intelligence réelle du jeu, sur 48 parties par difficulté :
+Après l’ajustement des vitesses de base, de la vitesse d’Elizabeth, de la protection de réapparition et du délai de première ruée, les simulations ont été relancées en mode Protection avec les positions de départ aléatoires et l’intelligence réelle du jeu, sur 32 parties par difficulté :
 
 | Difficulté | Survie seule d’Elizabeth | Victoires du Victor automatique | Morts d’Elizabeth avec le Victor automatique |
-| ---------- | ------------------------ | ----------------------- | ----------------------------- |
-| Facile | 27,1 s en moyenne | 88 % | 6 / 48 |
-| Normal | 19,1 s en moyenne | 90 % | 5 / 48 |
-| Difficile | 17,1 s en moyenne | 48 % | 21 / 48 |
+| ---------- | ------------------------ | ------------------------------- | --------------------------------------------- |
+| Facile | 89,5 s en moyenne | 91 % (29 / 32) | 3 / 32 |
+| Normal | 68,9 s en moyenne | 84 % (27 / 32) | 5 / 32 |
+| Difficile | 14,0 s en moyenne | 47 % (15 / 32) | 17 / 32 |
 
-La survie seule mesure le temps qu’Elizabeth passe sans intervention de Victor. Le Victor automatique suit un chemin parfait vers la Créature ; un joueur humain peut donc obtenir des résultats différents. En Difficile, l’évitement de Victor par la Créature fait nettement baisser le taux de victoire du bot, ce qui correspond à l’objectif de la difficulté.
+La survie seule mesure le temps qu’Elizabeth passe sans intervention de Victor. Le Victor automatique suit un chemin parfait vers la Créature ; un joueur humain peut donc obtenir des résultats différents. Le mode Jouer la Créature n’est pas inclus dans ce tableau.
+
+La courbe est désormais lisible : Facile reste accessible, Normal demande de la précision et Difficile laisse environ une chance sur deux au Victor automatique. La ruée conserve les valeurs demandées — recharges de 10, 5 et 2 secondes, durée de 1,2 seconde, multiplicateur de 3 et bris de tous les murs — mais elle ne démarre plus instantanément au lancement ou après une réapparition.
 
 ## Lancer le jeu localement
 
@@ -173,12 +204,14 @@ Le jeu est entièrement statique : le HTML, le CSS, les modules JavaScript, les 
 
 | Touche | Action |
 | ------ | ------ |
-| `W` `A` `S` `D` | Déplacer Victor |
-| `↑` `↓` `←` `→` | Déplacer Victor |
+| `W` `A` `S` `D` | Déplacer Victor dans les deux modes |
+| `↑` `↓` `←` `→` | Mode Protection : déplacer Victor. Mode Jouer la Créature : déplacer la Créature. |
 | `P` | Mettre le temps en pause / reprendre |
 | `F` | Basculer entre carte plein écran et fenêtre |
 | `Échap` | Quitter le labyrinthe / fermer la fenêtre |
 | `Entrée` | Lancer la partie depuis le menu |
+
+Le mode Jouer la Créature se joue à deux sur le même clavier : une personne utilise WASD pour Victor, l’autre les flèches pour la Créature.
 
 ## Prochaines étapes
 

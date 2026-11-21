@@ -4,10 +4,16 @@ import {
   DIRECTIONS,
   ELIZABETH_SPAWN,
   TILE,
+  canMove,
   isWalkableTile,
   walkableNeighbors,
 } from './maze.js';
-import { buildDistanceField, buildRiskField, fieldDistance } from './pathing.js';
+import {
+  buildDashField,
+  buildDistanceField,
+  buildRiskField,
+  fieldDistance,
+} from './pathing.js';
 
 /**
  * Story layer for the single village level.
@@ -21,9 +27,15 @@ import { buildDistanceField, buildRiskField, fieldDistance } from './pathing.js'
 
 export const STORY_RULES = Object.freeze({
   reachDistance: 0.64,
-  elizabethSpeed: 1.3,
+  elizabethSpeed: 3.2,
   fleeRadius: 7,
   wanderContinueChance: 0.55,
+});
+
+/** Elizabeth is slower in the local duel so the no-dash Creature can catch her. */
+export const DUEL_RULES = Object.freeze({
+  ...STORY_RULES,
+  elizabethSpeed: 1.8,
 });
 
 const OPPOSITE = Object.freeze({
@@ -58,6 +70,27 @@ export const STORY_OUTCOMES = Object.freeze({
     title: 'Elizabeth est morte.',
     copy: 'La Créature attrape Elizabeth dans les rues pavées avant que Victor ne puisse l’arrêter. Victor arrive trop tard pour sauver sa fiancée.',
     epilogue: JUSTINE_TRAGEDY,
+  }),
+  creatureWin: Object.freeze({
+    ending: 'creatureWin',
+    label: 'La Créature gagne',
+    title: 'Elizabeth est morte.',
+    copy: 'Vous atteignez Elizabeth avant que Victor ne puisse vous intercepter. La tragédie annoncée par le roman s’accomplit dans les ruelles du village.',
+    epilogue: JUSTINE_TRAGEDY,
+  }),
+  creatureCaught: Object.freeze({
+    ending: 'creatureCaught',
+    label: 'Victor gagne',
+    title: 'Elizabeth est sauve.',
+    copy: 'Victor intercepte la Créature avant qu’elle n’atteigne Elizabeth. Une seule vie aura suffi à Victor pour mettre fin à la traque.',
+    epilogue: JUSTINE_SAFE,
+  }),
+  creatureTimeout: Object.freeze({
+    ending: 'creatureTimeout',
+    label: 'Temps écoulé',
+    title: 'Elizabeth est sauve.',
+    copy: 'Le temps s’épuise avant que la Créature n’atteigne Elizabeth. Victor remporte le duel et ramène Elizabeth au village.',
+    epilogue: JUSTINE_SAFE,
   }),
   timeout: Object.freeze({
     ending: 'timeout',
@@ -185,7 +218,7 @@ export class StoryLevel {
 
   /** Read-only proximity check; movement and collision remain separate. */
   creatureReachedElizabeth(creature) {
-    if (!creature || this.resolved) return false;
+    if (!creature || creature.invulnerable || this.resolved) return false;
     const dx = creature.x - this.elizabeth.x;
     const dy = creature.y - this.elizabeth.y;
     return Math.hypot(dx, dy) <= this.rules.reachDistance;
@@ -211,8 +244,8 @@ export class StoryLevel {
 /**
  * Village Creature: follows Elizabeth's current tile, with a difficulty
  * profile that controls path recognition and how strongly it avoids Victor.
- * On Hard it can spend one wall break per life to open a shortcut through a
- * stone block.
+ * A dash always opens the shortest available route, breaking every wall it
+ * enters along the way.
  */
 export class StoryCreature extends Creature {
   constructor(options) {
@@ -224,6 +257,8 @@ export class StoryCreature extends Creature {
     this.victorField = null;
     this.riskKey = null;
     this.riskField = null;
+    this.dashKey = null;
+    this.dashField = null;
     this.onWallBreak = onWallBreak;
   }
 
@@ -235,6 +270,8 @@ export class StoryCreature extends Creature {
     this.victorField = null;
     this.riskKey = null;
     this.riskField = null;
+    this.dashKey = null;
+    this.dashField = null;
   }
 
   chooseDirection(context) {
@@ -244,7 +281,12 @@ export class StoryCreature extends Creature {
       return;
     }
 
-    if (this.tryBreakWall(context)) return;
+    // A dash has no range gate: it follows the shortest geometric route to
+    // Elizabeth and shatters every wall standing on that route.
+    if (this.dashing && this.profile.destroyWalls) {
+      this.dashThrough(goal);
+      return;
+    }
 
     const options = walkableNeighbors(this.maze, this.col, this.row);
     if (!options.length) {
@@ -357,49 +399,69 @@ export class StoryCreature extends Creature {
     return this.riskField;
   }
 
-  /**
-   * Spend the one wall break granted per Hard-mode life. The closest
-   * breakable wall to Elizabeth wins, which keeps the shortcut purposeful.
-   */
-  tryBreakWall(context) {
-    if (!this.dashing || !this.profile.destroyWalls || !this.wallBreakAvailable) {
-      return false;
+  dashFieldFor(goal) {
+    const key = `${goal.col},${goal.row}`;
+    if (this.dashKey !== key || !this.dashField) {
+      // Build the field from the goal so each step chooses a neighbour with a
+      // lower distance, even when the chosen route cuts through walls.
+      this.dashField = buildDashField(this.maze, goal);
+      this.dashKey = key;
     }
+    return this.dashField;
+  }
 
-    const goal = context?.goal;
-    if (!goal) return false;
+  /** Follow the dash field through walls, shattering each wall entered. */
+  dashThrough(goal) {
+    const field = this.dashFieldFor(goal);
+    const directions = Object.values(DIRECTIONS);
+    let best = Infinity;
+    const bestDirections = [];
 
-    const walls = [];
-    for (const direction of Object.values(DIRECTIONS)) {
+    for (const direction of directions) {
       const col = this.col + direction.x;
       const row = this.row + direction.y;
       if (
         col <= 0 ||
         row <= 0 ||
         col >= this.maze.columns - 1 ||
-        row >= this.maze.rows - 1 ||
-        this.maze.tiles[row][col] !== TILE.WALL
+        row >= this.maze.rows - 1
       ) {
         continue;
       }
 
-      walls.push({
-        col,
-        row,
-        direction,
-        score: Math.abs(goal.col - col) + Math.abs(goal.row - row),
-      });
+      const distance = field[row * this.maze.columns + col];
+      if (distance < 0) continue;
+
+      if (distance < best) {
+        best = distance;
+        bestDirections.length = 0;
+        bestDirections.push(direction);
+      } else if (distance === best) {
+        bestDirections.push(direction);
+      }
     }
 
-    if (!walls.length) return false;
+    const direction = pick(bestDirections, this.rng);
+    if (!direction) {
+      this.direction = null;
+      return;
+    }
 
-    walls.sort((a, b) => a.score - b.score);
-    const wall = walls[0];
-    this.maze.tiles[wall.row][wall.col] = TILE.EMPTY;
-    this.wallBreakAvailable = false;
-    this.direction = wall.direction;
+    const col = this.col + direction.x;
+    const row = this.row + direction.y;
+    if (this.maze.tiles[row][col] === TILE.WALL) {
+      this.breakWall(col, row);
+    }
+    this.direction = direction;
+  }
+
+  breakWall(col, row) {
+    if (this.maze.tiles[row]?.[col] !== TILE.WALL) return false;
+
+    this.maze.tiles[row][col] = TILE.EMPTY;
+    this.wallsBrokenThisDash += 1;
     this.invalidatePathing();
-    this.onWallBreak?.({ col: wall.col, row: wall.row });
+    this.onWallBreak?.({ col, row });
     return true;
   }
 
@@ -410,5 +472,32 @@ export class StoryCreature extends Creature {
       this.goalKey = key;
     }
     return this.goalField;
+  }
+}
+
+/** A human-controlled Creature for the local two-player duel. */
+export class PlayerCreature extends StoryCreature {
+  constructor(options) {
+    super(options);
+    this.nextDirection = null;
+  }
+
+  reset() {
+    super.reset();
+    this.nextDirection = null;
+  }
+
+  requestDirection(nameOrDirection) {
+    const direction =
+      typeof nameOrDirection === 'string' ? DIRECTIONS[nameOrDirection] : nameOrDirection;
+    if (direction) this.nextDirection = direction;
+  }
+
+  chooseDirection() {
+    const wanted = this.nextDirection;
+    if (wanted && canMove(this.maze, this.col, this.row, wanted)) {
+      this.direction = wanted;
+      this.nextDirection = null;
+    }
   }
 }

@@ -189,6 +189,17 @@
   border-radius: var(--radius);
 }
 
+.segmented--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.segmented--two .segmented__face {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-align: center;
+}
+
 .segmented__opt {
   position: relative;
   display: block;
@@ -247,6 +258,10 @@
   color: rgba(239, 232, 214, 0.5);
   font-size: 0.78rem;
   line-height: 1.45;
+}
+
+.field__hint--mode {
+  min-height: 0;
 }
 
 .sound-toggle {
@@ -598,7 +613,83 @@ body[data-map-layout="full"] .stage-bar {
   background: rgba(5, 9, 12, 0.74);
 }
 
+@media (max-height: 760px) {
+  .shell {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .panel {
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    padding: 18px 20px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  .title {
+    margin-top: 8px;
+    font-size: clamp(1.9rem, 9vw, 3rem);
+  }
+
+  .tagline {
+    margin-top: 8px;
+    font-size: 0.78rem;
+  }
+
+  .brand::after {
+    margin-top: 10px;
+  }
+
+  .menu {
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .btn--play {
+    min-height: 54px;
+    padding: 14px 18px;
+  }
+
+  .field__legend {
+    margin: 2px 0 6px;
+  }
+
+  .field__hint {
+    font-size: 0.72rem;
+    line-height: 1.35;
+  }
+
+  .panel__footer {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+}
+
+@media (max-height: 700px) {
+  .tagline,
+  .brand::after,
+  .panel__footer {
+    display: none;
+  }
+
+  .menu {
+    margin-top: 12px;
+  }
+}
+
 @media (max-width: 540px) {
+  .stage-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .stage-bar__hint {
+    flex-wrap: wrap;
+  }
+
   body[data-map-layout="full"] .hud {
     top: 8px;
     right: 8px;
@@ -691,6 +782,10 @@ body[data-map-layout="full"] .stage-bar {
   margin: 20px 0 0;
   padding-top: 16px;
   border-top: 1px solid var(--line);
+}
+
+.result-stats--single {
+  grid-template-columns: 1fr;
 }
 
 .result-stat {
