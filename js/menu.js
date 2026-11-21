@@ -22,10 +22,9 @@ export class MenuView {
     };
     this.playButton = byId('btn-play');
     this.instructionsButton = byId('btn-instructions');
-    this.modeHint = byId('mode-hint');
-    this.difficultyHint = byId('difficulty-hint');
     this.difficultyChip = byId('stage-difficulty');
     this.mapLayoutButton = byId('btn-map-layout');
+    this.layoutButtons = [...document.querySelectorAll('[data-stage-layout]')];
     this.dialog = byId('instructions-dialog');
     this.modeRadios = [...document.querySelectorAll('input[name="mode"]')];
     this.radios = [...document.querySelectorAll('input[name="difficulty"]')];
@@ -33,8 +32,6 @@ export class MenuView {
     this.hudTitle = byId('stage-title');
     this.hudObjective = byId('stage-objective');
     this.stageMoveHint = byId('stage-move-hint');
-    this.currentMode = 'guardian';
-    this.currentDifficulty = 'normal';
     this.soundButtons = [...document.querySelectorAll('[data-sound-toggle]')];
     this.soundLabels = [...document.querySelectorAll('[data-sound-label]')];
     this.creatureLives = byId('stage-lives');
@@ -77,6 +74,9 @@ export class MenuView {
     byId('btn-back').addEventListener('click', () => handlers.onBack?.());
     this.instructionsButton.addEventListener('click', () => handlers.onInstructions?.());
     this.mapLayoutButton.addEventListener('click', () => handlers.onMapLayout?.());
+    this.layoutButtons.forEach((button) => {
+      button.addEventListener('click', () => handlers.onLayout?.(button.dataset.stageLayout));
+    });
     byId('btn-close-instructions').addEventListener('click', () => this.dialog.close());
     byId('btn-close-instructions-2').addEventListener('click', () => this.dialog.close());
 
@@ -116,13 +116,8 @@ export class MenuView {
   }
 
   setMode(id) {
-    this.currentMode = id === 'creature' ? 'creature' : 'guardian';
-    document.body.dataset.mode = this.currentMode;
-    this.modeHint.textContent =
-      this.currentMode === 'creature'
-        ? 'Duel local à deux : flèches pour la Créature, WASD pour Victor. Une seule vie, sans ruée.'
-        : 'Victor protège Elizabeth. Déplacez-le avec WASD ou les flèches.';
-    if (this.currentDifficulty) this.setDifficulty(this.currentDifficulty);
+    const mode = id === 'creature' ? 'creature' : 'guardian';
+    document.body.dataset.mode = mode;
   }
 
   /** The stage objective, controls and power panel follow the selected mode. */
@@ -148,16 +143,16 @@ export class MenuView {
       'aria-label',
       full ? 'Passer à la carte en fenêtre' : 'Passer à la carte plein écran',
     );
+    this.layoutButtons.forEach((button) => {
+      const active = button.dataset.stageLayout === (full ? 'full' : 'windowed');
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
   }
 
   setDifficulty(id) {
     const difficulty = DIFFICULTIES[id];
     if (!difficulty) return;
-    this.currentDifficulty = id;
-    this.difficultyHint.textContent =
-      this.currentMode === 'creature'
-        ? `Duel local : ${difficulty.playerSpeed} cases/s pour les deux, ${difficulty.timeLimit} s et une seule vie pour la Créature.`
-        : difficulty.hint;
     this.difficultyChip.textContent = difficulty.label;
     this.difficultyChip.dataset.level = difficulty.id;
   }

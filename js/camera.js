@@ -1,7 +1,8 @@
 /**
- * Fit-all camera. Scales the maze so every tile stays visible inside the
- * available viewport, then centres it. Positions are kept in CSS pixels and
- * tile units so the renderer never has to deal with device pixel ratios.
+ * Camera for the maze. The windowed view fits every tile; the full view uses
+ * a cover fit so the map reaches the edges of a laptop screen while keeping
+ * the playable rows and columns on-screen. Positions stay in CSS pixels and
+ * tile units so the renderer never has to handle device pixel ratios.
  */
 export class Camera {
   constructor() {
@@ -22,6 +23,8 @@ export class Camera {
     maxCell = 44,
     minCell = 4,
     insets = {},
+    cover = false,
+    fractional = false,
   }) {
     const top = Math.max(0, insets.top ?? 0);
     const right = Math.max(0, insets.right ?? 0);
@@ -30,9 +33,16 @@ export class Camera {
 
     const availableWidth = Math.max(1, viewportWidth - left - right);
     const availableHeight = Math.max(1, viewportHeight - top - bottom);
+    const fitCell = Math.min(availableWidth / columns, availableHeight / rows);
+    const coverCell = Math.max(availableWidth / columns, availableHeight / rows);
+    const safeCell = Math.min(
+      availableWidth / Math.max(1, columns - 2),
+      availableHeight / Math.max(1, rows - 2),
+    );
+    const rawCell = cover ? Math.min(coverCell, safeCell) : fitCell;
     const cell = Math.max(
       minCell,
-      Math.min(maxCell, Math.floor(Math.min(availableWidth / columns, availableHeight / rows))),
+      Math.min(maxCell, fractional ? rawCell : Math.floor(rawCell)),
     );
 
     this.cell = cell;

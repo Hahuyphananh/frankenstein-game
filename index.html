@@ -28,18 +28,9 @@
           class="screen screen--menu"
           id="screen-menu"
           data-screen="menu"
-          aria-labelledby="game-title"
+          aria-label="Menu principal"
         >
           <div class="panel">
-            <header class="brand">
-              <p class="label">Un petit projet de programmation</p>
-              <h1 class="title" id="game-title"><span class="title__text">Frankenstein</span></h1>
-              <p class="tagline">
-                Protégez Elizabeth des griffes de la Créature, ou incarnez-la et accomplissez la
-                tragédie avant que Victor ne vous arrête.
-              </p>
-            </header>
-
             <nav class="menu" aria-label="Menu principal">
               <button class="btn btn--play" id="btn-play" type="button">
                 <span class="btn__label">Jouer</span>
@@ -65,10 +56,9 @@
                       name="mode"
                       value="creature"
                     />
-                    <span class="segmented__face">Jouer la Créature</span>
+                    <span class="segmented__face">2 joueurs</span>
                   </label>
                 </div>
-                <p class="field__hint field__hint--mode" id="mode-hint" aria-live="polite"></p>
               </fieldset>
 
               <fieldset class="field">
@@ -103,7 +93,6 @@
                     <span class="segmented__face">Difficile</span>
                   </label>
                 </div>
-                <p class="field__hint" id="difficulty-hint" aria-live="polite"></p>
               </fieldset>
 
               <div class="menu__row">
@@ -221,6 +210,34 @@
             </p>
           </div>
 
+          <div
+            class="stage-view-switch"
+            id="stage-view-switch"
+            role="group"
+            aria-label="Taille de la carte"
+          >
+            <button
+              class="stage-view-switch__btn"
+              type="button"
+              data-stage-layout="windowed"
+              aria-label="Afficher la carte en fenêtre"
+              aria-pressed="false"
+              title="Carte en fenêtre"
+            >
+              <span aria-hidden="true">↙</span>
+            </button>
+            <button
+              class="stage-view-switch__btn"
+              type="button"
+              data-stage-layout="full"
+              aria-label="Afficher la carte en plein écran"
+              aria-pressed="true"
+              title="Carte plein écran"
+            >
+              <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+
           <div class="stage-result" id="stage-result" hidden>
             <section
               class="stage-result__panel"
@@ -326,7 +343,7 @@
               WASD ou les flèches, et la Créature est dirigée par l’intelligence du jeu.
             </p>
             <p>
-              <strong>Jouer la Créature</strong> est un duel local à deux sur le même clavier : le
+              <strong>2 joueurs</strong> est un duel local à deux sur le même clavier : le
               joueur 1 contrôle Victor avec WASD, le joueur 2 contrôle la Créature avec les flèches.
               La Créature n’a qu’une seule vie, ne peut pas effectuer de ruée et se déplace à la même
               vitesse que Victor. Elle commence dans un coin proche d’Elizabeth, tandis que Victor
@@ -374,7 +391,7 @@
                   ><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd></span
                 >
                 <span
-                  >Mode Protection : déplacer Victor. Mode Créature : déplacer la Créature.</span
+                  >Mode Protection : déplacer Victor. Mode 2 joueurs : déplacer la Créature.</span
                 >
               </li>
               <li>
@@ -413,7 +430,7 @@
               chemins ; en Normal, elle trouve un bon chemin en évitant un peu Victor ; en Difficile,
               elle cherche le chemin le plus rapide tout en gardant fortement ses distances avec
               Victor. Sa vitesse de base augmente légèrement avec la difficulté, mais reste bien
-              inférieure à celle de Victor. En mode Jouer la Créature, Elizabeth avance à 1,8 case/s,
+              inférieure à celle de Victor. En mode 2 joueurs, Elizabeth avance à 1,8 case/s,
               les deux personnages vont à la même vitesse, la Créature n’a qu’une vie et aucune ruée.
             </p>
           </section>

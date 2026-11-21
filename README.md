@@ -6,13 +6,13 @@ Inspiré du roman *Frankenstein* de Mary Shelley.
 
 **Version en ligne :** https://hahuyphananh.github.io/frankenstein-game/
 
-**État : un niveau jouable, en solo ou en duel local.** Dans **Protéger Elizabeth**, la Créature traque Elizabeth tandis que Victor tente de la capturer. Dans **Jouer la Créature**, deux joueurs partagent le clavier : Victor défend Elizabeth avec WASD, la Créature la poursuit avec les flèches. Elizabeth se déplace dans les rues en boucle et fuit lorsque la Créature approche. Si Victor épuise les trois vies de la Créature, Elizabeth et Justine sont sauves. Sinon, la tragédie du roman se produit.
+**État : un niveau jouable, en solo ou en duel local.** Dans **Protéger Elizabeth**, la Créature traque Elizabeth tandis que Victor tente de la capturer. Dans le mode **2 joueurs**, deux joueurs partagent le clavier : Victor défend Elizabeth avec WASD, la Créature la poursuit avec les flèches. Elizabeth se déplace dans les rues en boucle et fuit lorsque la Créature approche. Si Victor épuise les trois vies de la Créature, Elizabeth et Justine sont sauves. Sinon, la tragédie du roman se produit.
 
 ## Fonctionnalités
 
 - Un niveau complet dans un village gothique dessiné au canvas.
 - **Protéger Elizabeth** : mode solo où Victor, contrôlé avec WASD ou les flèches, doit capturer trois fois la Créature avant qu’elle n’atteigne Elizabeth.
-- **Jouer la Créature** : duel local à deux joueurs, Victor au WASD et la Créature aux flèches. La Créature n’a qu’une vie, ne peut pas effectuer de ruée et se déplace à la même vitesse que Victor.
+- **2 joueurs** : duel local à deux joueurs, Victor au WASD et la Créature aux flèches. La Créature n’a qu’une vie, ne peut pas effectuer de ruée et se déplace à la même vitesse que Victor.
 - Trois difficultés avec des vitesses, des ruées et des intelligences différentes.
 - Elizabeth mobile : elle marche lentement, explore les rues et fuit la Créature.
 - Trois vies pour la Créature en mode Protection, avec réapparition dans un coin différent après chaque contact.
@@ -29,9 +29,9 @@ Inspiré du roman *Frankenstein* de Mary Shelley.
 | Mode | Joueurs | Objectif |
 | ---- | ------- | -------- |
 | **Protéger Elizabeth** | 1 joueur | Contrôler Victor avec WASD ou les flèches et capturer trois fois la Créature avant qu’elle n’atteigne Elizabeth. |
-| **Jouer la Créature** | 2 joueurs sur le même clavier | La Créature (flèches) doit atteindre Elizabeth avant que Victor (WASD) ne la touche. Une seule vie et aucune ruée ; les deux personnages vont à la même vitesse. |
+| **2 joueurs** | Deux joueurs sur le même clavier | La Créature (flèches) doit atteindre Elizabeth avant que Victor (WASD) ne la touche. Une seule vie et aucune ruée ; les deux personnages vont à la même vitesse. |
 
-En mode Jouer la Créature, Elizabeth morte donne la victoire à la Créature ; un contact avec Victor ou un temps écoulé donne la victoire à Victor. Le mode choisi est conservé avec les autres réglages.
+En mode 2 joueurs, Elizabeth morte donne la victoire à la Créature ; un contact avec Victor ou un temps écoulé donne la victoire à Victor. Le mode choisi est conservé avec les autres réglages.
 
 ## Structure du projet
 
@@ -81,7 +81,7 @@ js/
 - **Elizabeth** avance à `3,2` cases/s en mode Protection et à `1,8` case/s dans le duel. Elle erre dans les rues et, lorsque la Créature entre dans un rayon de `7` cases, elle utilise un champ de distance pour choisir la direction qui laisse le plus de rues entre elles.
 - La Créature est une `StoryCreature` spécifique au niveau. Son comportement dépend de la difficulté.
 - En mode **Protéger Elizabeth**, Victor doit épuiser les trois vies de la Créature.
-- En mode **Jouer la Créature**, le joueur incarné est une `PlayerCreature` : elle avance aux flèches, possède une seule vie, ne peut pas déclencher de ruée et utilise la vitesse de Victor.
+- En mode **2 joueurs**, le joueur incarné est une `PlayerCreature` : elle avance aux flèches, possède une seule vie, ne peut pas déclencher de ruée et utilise la vitesse de Victor.
 - **Si la Créature atteint Elizabeth :** Elizabeth meurt. Justine Moritz est plus tard exécutée après avoir été faussement accusée de son meurtre. Justine n’est pas physiquement tuée par la Créature.
 - **Si Victor capture la Créature en mode Protection :** Elizabeth survit et Justine n’est jamais accusée.
 - **En duel :** un contact de Victor met fin à l’unique vie de la Créature et donne la victoire à Victor. Atteindre Elizabeth donne la victoire au joueur qui contrôle la Créature.
@@ -96,7 +96,7 @@ js/
 | Normal | 1,7 case/s | 5 cases/s |
 | Difficile | 1,8 case/s | 5,6 cases/s |
 
-La vitesse de base de la Créature augmente légèrement à chaque difficulté, mais reste très inférieure à celle de Victor. La pression vient surtout de la ruée et du bris de murs, pas d’une course permanente. En mode **Jouer la Créature**, les deux personnages utilisent `playerSpeed` : 5 cases/s en Facile et en Normal, 5,6 en Difficile. Elizabeth y utilise une vitesse réduite afin que la Créature, qui n’a pas de ruée, puisse la rattraper.
+La vitesse de base de la Créature augmente légèrement à chaque difficulté, mais reste très inférieure à celle de Victor. La pression vient surtout de la ruée et du bris de murs, pas d’une course permanente. En mode **2 joueurs**, les deux personnages utilisent `playerSpeed` : 5 cases/s en Facile et en Normal, 5,6 en Difficile. Elizabeth y utilise une vitesse réduite afin que la Créature, qui n’a pas de ruée, puisse la rattraper.
 
 ## Intelligence de la Créature
 
@@ -123,7 +123,7 @@ En Normal et en Difficile, `buildRiskField()` construit un champ de coût de typ
 - Pendant la ruée, la Créature suit le chemin le plus court en ignorant les murs et brise **chaque mur qu’elle traverse**, dans les trois difficultés. Plusieurs murs peuvent tomber pendant une même ruée.
 - Les ouvertures restent jusqu’à la fin de la partie. Toutes les mémoires de chemin sont reconstruites après chaque bris.
 - Il n’y a plus de limite d’un mur par vie : le bris est lié à la ruée, pas aux réapparitions.
-- L’interface affiche l’état de la ruée (**Prêt**, **Actif** ou le nombre de secondes restantes) ainsi que le nombre de murs brisés pendant la dernière ruée (**Murs : brisables** ou **Murs : N brisés**). La jauge est masquée en mode Jouer la Créature, puisque la Créature ne peut pas y effectuer de ruée.
+- L’interface affiche l’état de la ruée (**Prêt**, **Actif** ou le nombre de secondes restantes) ainsi que le nombre de murs brisés pendant la dernière ruée (**Murs : brisables** ou **Murs : N brisés**). La jauge est masquée en mode 2 joueurs, puisque la Créature ne peut pas y effectuer de ruée.
 - **Recommencer** restaure les murs et recrée tous les acteurs.
 - Lorsqu’elle est touchée en mode Protection, la Créature réapparaît dans un coin différent : `(1,1)`, `(23,1)`, `(1,13)` ou `(23,13)`. Chaque vie utilise un coin distinct tant que des alternatives existent. La recharge de ruée repart alors à zéro. Pendant les quatre secondes de protection, Elizabeth est également invulnérable.
 
@@ -131,17 +131,17 @@ En Normal et en Difficile, `buildRiskField()` construit un champ de coût de typ
 
 - En mode Protection, la Créature apparaît dans un coin aléatoire. Victor et Elizabeth apparaissent sur des cases de rue aléatoires, à distance de la Créature et l’un de l’autre.
 - `chooseStartPositions()` mémorise la partie précédente et évite de replacer chaque personnage sur exactement la même case au Recommencer.
-- En mode Jouer la Créature, `chooseDuelStartPositions()` place la Créature dans l’un des deux coins les plus proches d’Elizabeth, puis Victor à au moins 10 cases de la Créature. Le duel commence ainsi avec une course réelle plutôt qu’avec un avantage écrasant pour Victor.
+- En mode 2 joueurs, `chooseDuelStartPositions()` place la Créature dans l’un des deux coins les plus proches d’Elizabeth, puis Victor à au moins 10 cases de la Créature. Le duel commence ainsi avec une course réelle plutôt qu’avec un avantage écrasant pour Victor.
 - Les trois personnages ne partagent jamais la même case au départ.
 - La réapparition de la Créature après un contact reste séparée de la position de Victor.
-- En mode Jouer la Créature, il n’y a qu’une seule vie et aucune réapparition : le premier contact avec Victor termine la partie.
+- En mode 2 joueurs, il n’y a qu’une seule vie et aucune réapparition : le premier contact avec Victor termine la partie.
 
 ## Carte plein écran
 
-- Le niveau s’ouvre dans une vue immersive qui remplit la fenêtre, avec une interface compacte en surimpression.
-- Le bouton **Fenêtré** de l’interface, ou la touche `F`, bascule vers la scène encadrée. Le bouton affiche alors **Plein écran** ; le choix est conservé avec les autres réglages.
+- Le niveau s’ouvre dans une vue immersive qui remplit toute la largeur et la hauteur de l’écran, avec une interface compacte en surimpression. La carte est recadrée sur les murs extérieurs si nécessaire pour couvrir un écran de portable 16:9 ou 16:10, sans masquer les rues jouables.
+- Le bouton **Fenêtré** de l’interface, la touche `F`, ou les flèches **↙** et **↗** en bas à droite basculent entre la scène encadrée et le plein écran. La flèche active est mise en évidence ; le choix est conservé avec les autres réglages.
 - Sur petit écran, les libellés secondaires et le bouton de son de la scène sont masqués pour laisser toute la place au labyrinthe. Le bouton de carte devient **Carte**.
-- En mode Protection, l’indicateur de ruée et le compteur de murs restent visibles sur mobile. En mode Jouer la Créature, la jauge de ruée est masquée.
+- En mode Protection, l’indicateur de ruée et le compteur de murs restent visibles sur mobile. En mode 2 joueurs, la jauge de ruée est masquée.
 
 ## Temps et score
 
@@ -160,7 +160,7 @@ En Normal et en Difficile, `buildRiskField()` construit un champ de coût de typ
 ## Boucle de capture
 
 - Victor est invulnérable ; la Créature possède les vies.
-- En mode Protection, chaque partie commence avec **3 vies** (`CREATURE_RULES.lives`). En mode Jouer la Créature, la Créature possède **1 vie**.
+- En mode Protection, chaque partie commence avec **3 vies** (`CREATURE_RULES.lives`). En mode 2 joueurs, la Créature possède **1 vie**.
 - Un contact retire une vie, téléporte la Créature dans un autre coin et accorde **4 secondes** d’invulnérabilité.
 - Pendant ces quatre secondes, Elizabeth est aussi invulnérable : la Créature ne peut pas la tuer avant la fin de sa protection de réapparition.
 - Les collisions utilisent une distance en cases (`CREATURE_RULES.hitDistance`). L’invulnérabilité est activée avant la frame suivante, ce qui empêche un seul chevauchement de retirer plusieurs vies.
@@ -177,7 +177,7 @@ Après l’ajustement des vitesses de base, de la vitesse d’Elizabeth, de la p
 | Normal | 68,9 s en moyenne | 84 % (27 / 32) | 5 / 32 |
 | Difficile | 14,0 s en moyenne | 47 % (15 / 32) | 17 / 32 |
 
-La survie seule mesure le temps qu’Elizabeth passe sans intervention de Victor. Le Victor automatique suit un chemin parfait vers la Créature ; un joueur humain peut donc obtenir des résultats différents. Le mode Jouer la Créature n’est pas inclus dans ce tableau.
+La survie seule mesure le temps qu’Elizabeth passe sans intervention de Victor. Le Victor automatique suit un chemin parfait vers la Créature ; un joueur humain peut donc obtenir des résultats différents. Le mode 2 joueurs n’est pas inclus dans ce tableau.
 
 La courbe est désormais lisible : Facile reste accessible, Normal demande de la précision et Difficile laisse environ une chance sur deux au Victor automatique. La ruée conserve les valeurs demandées — recharges de 10, 5 et 2 secondes, durée de 1,2 seconde, multiplicateur de 3 et bris de tous les murs — mais elle ne démarre plus instantanément au lancement ou après une réapparition.
 
@@ -205,13 +205,13 @@ Le jeu est entièrement statique : le HTML, le CSS, les modules JavaScript, les 
 | Touche | Action |
 | ------ | ------ |
 | `W` `A` `S` `D` | Déplacer Victor dans les deux modes |
-| `↑` `↓` `←` `→` | Mode Protection : déplacer Victor. Mode Jouer la Créature : déplacer la Créature. |
+| `↑` `↓` `←` `→` | Mode Protection : déplacer Victor. Mode 2 joueurs : déplacer la Créature. |
 | `P` | Mettre le temps en pause / reprendre |
 | `F` | Basculer entre carte plein écran et fenêtre |
 | `Échap` | Quitter le labyrinthe / fermer la fenêtre |
 | `Entrée` | Lancer la partie depuis le menu |
 
-Le mode Jouer la Créature se joue à deux sur le même clavier : une personne utilise WASD pour Victor, l’autre les flèches pour la Créature.
+Le mode 2 joueurs se joue à deux sur le même clavier : une personne utilise WASD pour Victor, l’autre les flèches pour la Créature.
 
 ## Prochaines étapes
 

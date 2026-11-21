@@ -46,6 +46,7 @@ export class Game {
       onDifficulty: (id) => this.setDifficulty(id),
       onSound: () => this.toggleSound(),
       onMapLayout: () => this.toggleMapLayout(),
+      onLayout: (layout) => this.setMapLayout(layout),
       onInstructions: () => this.openInstructions(),
       onInstructionsClosed: () => this.audio.play('close'),
     });
@@ -412,14 +413,20 @@ export class Game {
     if (this.settings.sound) this.audio.play('toggle');
   }
 
-  /** Full-screen immersive map by default; the button switches to windowed. */
-  toggleMapLayout() {
-    const layout = this.settings.mapLayout === 'full' ? 'windowed' : 'full';
-    this.settings.mapLayout = layout;
-    this.view.setMapLayout(layout);
-    this.renderer.setMapLayout(layout);
+  /** Set the map presentation and keep both layout controls in sync. */
+  setMapLayout(layout) {
+    const next = layout === 'full' ? 'full' : 'windowed';
+    if (this.settings.mapLayout === next) return;
+
+    this.settings.mapLayout = next;
+    this.view.setMapLayout(next);
+    this.renderer.setMapLayout(next);
     this.persist(this.settings);
     this.audio.play('move');
+  }
+
+  toggleMapLayout() {
+    this.setMapLayout(this.settings.mapLayout === 'full' ? 'windowed' : 'full');
   }
 
   openInstructions() {
