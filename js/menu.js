@@ -42,12 +42,14 @@ export class MenuView {
     this.resultLabel = byId('result-label');
     this.resultTimeLabel = byId('result-time-label');
     this.resultTime = byId('result-time');
+    this.resultTimeStat = this.resultTimeLabel.closest('.result-stat');
     this.resultStarsGroup = byId('result-stars');
     this.resultEpilogue = byId('result-epilogue');
     this.resultStars = [...this.resultStarsGroup.querySelectorAll('.star')];
     this.resultStats = this.resultStarsGroup.closest('.result-stats');
     this.resultStarsStat = this.resultStarsGroup.closest('.result-stat');
     this.pauseOverlay = byId('stage-pause');
+    this.pauseCopy = byId('pause-copy');
     this.resumeButton = byId('btn-resume');
     this.timerElement = byId('stage-timer');
     this.timerValue = byId('stage-timer-value');
@@ -124,10 +126,15 @@ export class MenuView {
   setStageMode(mode) {
     const duel = mode === 'creature';
     this.hudLabel.textContent = duel ? 'Duel local · une seule vie' : 'Village victorien · nuit';
-    this.hudTitle.textContent = duel ? 'Atteindre Elizabeth' : 'Protéger Elizabeth';
+    this.hudTitle.textContent = duel ? 'Duel local' : 'Protéger Elizabeth';
+    this.hudTitle.hidden = duel;
     this.hudObjective.textContent = duel
       ? 'Vous êtes la Créature : flèches pour bouger, WASD pour Victor. Sans ruée, atteignez Elizabeth avant d’être touché.'
       : 'La Créature traque Elizabeth. Épuisez ses trois vies avant qu’elle ne l’atteigne.';
+    this.timerElement.hidden = duel;
+    this.pauseCopy.textContent = duel
+      ? 'La partie est en pause. Reprenez quand vous êtes prêt.'
+      : 'Le temps est figé. Elizabeth attend dans les ruelles.';
     this.stageMoveHint.innerHTML = duel
       ? '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Victor</span><span class="stage-bar__keys"><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd></span><span>Créature</span>'
       : '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ou les flèches pour déplacer Victor</span>';
@@ -269,6 +276,7 @@ export class MenuView {
     stars = 0,
     story = null,
     showStars = true,
+    showTime = true,
   } = {}) {
     const lost = outcome === 'lost';
     const title = this.stageResult.querySelector('#stage-result-title');
@@ -292,8 +300,10 @@ export class MenuView {
 
     this.resultTimeLabel.textContent = lost ? 'Temps survécu' : 'Temps réalisé';
     this.resultTime.textContent = formatTime(elapsedMs / 1000);
+    this.resultTimeStat.hidden = !showTime;
     this.resultStarsStat.hidden = !showStars;
-    this.resultStats.classList.toggle('result-stats--single', !showStars);
+    this.resultStats.hidden = !showStars && !showTime;
+    this.resultStats.classList.toggle('result-stats--single', showStars !== showTime);
     this.resultStars.forEach((star, index) => {
       star.classList.toggle('is-earned', index < stars);
     });

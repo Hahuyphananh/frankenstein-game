@@ -69,15 +69,16 @@ export class Game {
   update(dt) {
     this.renderer.update(dt);
     if (this.screen !== 'stage' || this.stageStatus !== 'playing') return;
-    if (!this.player || !this.creature || !this.timer) return;
+    if (!this.player || !this.creature) return;
 
     const now = performance.now();
-    this.syncTimer(now);
+    if (this.timer) {
+      this.syncTimer(now);
 
-    if (this.timer.remaining(now) <= 0) {
-      if (this.mode === 'creature') this.finishCreatureRun('timeout', now);
-      else this.loseLevel(now);
-      return;
+      if (this.timer.remaining(now) <= 0) {
+        this.loseLevel(now);
+        return;
+      }
     }
 
     if (this.mode === 'creature') {
@@ -170,14 +171,21 @@ export class Game {
         onWallBreak: (wall) => this.wallBroken(wall),
       });
     }
-    this.timer = new CountdownTimer({ limitSeconds: difficulty.timeLimit });
-    this.timer.start(performance.now());
-    this.displayedSecond = difficulty.timeLimit;
+    // The local duel has no countdown; only the protection mode is timed.
+    this.timer = mode === 'guardian'
+      ? new CountdownTimer({ limitSeconds: difficulty.timeLimit })
+      : null;
+    if (this.timer) {
+      this.timer.start(performance.now());
+      this.displayedSecond = difficulty.timeLimit;
+    } else {
+      this.displayedSecond = null;
+    }
 
     this.view.hidePause();
     this.view.hideStageResult();
     this.view.setStageMode(mode);
-    this.view.setTimer(difficulty.timeLimit, difficulty.timeLimit);
+    if (this.timer) this.view.setTimer(difficulty.timeLimit, difficulty.timeLimit);
     this.view.setCreatureLives(this.creature.lives, this.creature.maxLives);
     this.syncCreaturePower();
     this.renderer.setPlayer(this.player);
@@ -219,7 +227,7 @@ export class Game {
     if (this.stageStatus !== 'playing') return;
 
     this.stageStatus = 'paused';
-    this.timer.pause(performance.now());
+    this.timer?.pause(performance.now());
     this.freezeActors();
     this.view.showPause();
     this.audio.play('open');
@@ -228,7 +236,7 @@ export class Game {
   resume() {
     if (this.stageStatus !== 'paused') return;
 
-    this.timer.resume(performance.now());
+    this.timer?.resume(performance.now());
     this.stageStatus = 'playing';
     this.view.hidePause();
     this.audio.play('close');
@@ -313,23 +321,16 @@ export class Game {
     const endings = {
       creature: 'creatureWin',
       victor: 'creatureCaught',
-      timeout: 'creatureTimeout',
     };
     const ending = endings[cause];
     if (!ending) return;
 
     const won = cause === 'creature';
     this.stageStatus = won ? 'won' : 'lost';
-    const elapsedMs = this.timer.stop(now);
+    const elapsedMs = this.timer?.stop(now) ?? 0;
     const story = this.story?.resolve(ending) ?? null;
 
     this.freezeActors();
-    if (cause === 'timeout') {
-      this.displayedSecond = 0;
-      this.view.setTimer(0, this.currentDifficulty.timeLimit);
-    } else {
-      this.syncTimer(now);
-    }
     if (cause === 'victor') this.view.setCreatureLives(0, this.creature.maxLives);
 
     this.lastResult = {
@@ -347,6 +348,7 @@ export class Game {
       stars: 0,
       story,
       showStars: false,
+      showTime: false,
     });
     this.audio.play(won ? 'win' : 'lose');
   }

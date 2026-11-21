@@ -29,9 +29,9 @@ Inspiré du roman *Frankenstein* de Mary Shelley.
 | Mode | Joueurs | Objectif |
 | ---- | ------- | -------- |
 | **Protéger Elizabeth** | 1 joueur | Contrôler Victor avec WASD ou les flèches et capturer trois fois la Créature avant qu’elle n’atteigne Elizabeth. |
-| **2 joueurs** | Deux joueurs sur le même clavier | La Créature (flèches) doit atteindre Elizabeth avant que Victor (WASD) ne la touche. Une seule vie et aucune ruée ; les deux personnages vont à la même vitesse. |
+| **2 joueurs** | Deux joueurs sur le même clavier | La Créature (flèches) doit atteindre Elizabeth avant que Victor (WASD) ne la touche. Une seule vie, aucune ruée et aucun chronomètre ; les deux personnages vont à la même vitesse. |
 
-En mode 2 joueurs, Elizabeth morte donne la victoire à la Créature ; un contact avec Victor ou un temps écoulé donne la victoire à Victor. Le mode choisi est conservé avec les autres réglages.
+En mode 2 joueurs, Elizabeth morte donne la victoire à la Créature ; un contact avec Victor donne la victoire à Victor. Le mode choisi est conservé avec les autres réglages.
 
 ## Structure du projet
 
@@ -84,9 +84,9 @@ js/
 - En mode **2 joueurs**, le joueur incarné est une `PlayerCreature` : elle avance aux flèches, possède une seule vie, ne peut pas déclencher de ruée et utilise la vitesse de Victor.
 - **Si la Créature atteint Elizabeth :** Elizabeth meurt. Justine Moritz est plus tard exécutée après avoir été faussement accusée de son meurtre. Justine n’est pas physiquement tuée par la Créature.
 - **Si Victor capture la Créature en mode Protection :** Elizabeth survit et Justine n’est jamais accusée.
-- **En duel :** un contact de Victor met fin à l’unique vie de la Créature et donne la victoire à Victor. Atteindre Elizabeth donne la victoire au joueur qui contrôle la Créature.
-- Si le temps s’épuise en mode Protection, la Créature atteint Elizabeth et la même tragédie se produit. En duel, le temps écoulé donne la victoire à Victor.
-- L’écran de résultat affiche l’issue, le temps et un bouton **Recommencer**. Les étoiles sont réservées au mode Protection.
+- **En duel :** un contact de Victor met fin à l’unique vie de la Créature et donne la victoire à Victor. Atteindre Elizabeth donne la victoire au joueur qui contrôle la Créature. Il n’y a pas de chronomètre en duel.
+- Si le temps s’épuise en mode Protection, la Créature atteint Elizabeth et la même tragédie se produit.
+- L’écran de résultat affiche l’issue et un bouton **Recommencer**. Le temps et les étoiles sont réservés au mode Protection.
 
 ## Vitesses
 
@@ -138,7 +138,7 @@ En Normal et en Difficile, `buildRiskField()` construit un champ de coût de typ
 
 ## Carte plein écran
 
-- Le niveau s’ouvre dans une vue immersive qui remplit toute la largeur et la hauteur de l’écran, avec une interface compacte en surimpression. La carte est recadrée sur les murs extérieurs si nécessaire pour couvrir un écran de portable 16:9 ou 16:10, sans masquer les rues jouables.
+- Le niveau s’ouvre dans une vue immersive qui utilise toute la largeur et la hauteur disponible de l’écran, avec une interface compacte en surimpression. Le panneau de commandes compact réserve sa place en bas : la carte s’arrête au-dessus de lui et reste entièrement visible.
 - Le bouton **Fenêtré** de l’interface, la touche `F`, ou les flèches **↙** et **↗** en bas à droite basculent entre la scène encadrée et le plein écran. La flèche active est mise en évidence ; le choix est conservé avec les autres réglages.
 - Sur petit écran, les libellés secondaires et le bouton de son de la scène sont masqués pour laisser toute la place au labyrinthe. Le bouton de carte devient **Carte**.
 - En mode Protection, l’indicateur de ruée et le compteur de murs restent visibles sur mobile. En mode 2 joueurs, la jauge de ruée est masquée.
@@ -151,10 +151,10 @@ En Normal et en Difficile, `buildRiskField()` construit un champ de coût de typ
 | Normal | 90 s | ≤ 40 s | ≤ 70 s |
 | Difficile | 60 s | ≤ 25 s | ≤ 45 s |
 
-- Le chronomètre démarre au lancement de la partie et s’affiche dans l’interface.
-- `P` met la partie en pause ; le temps est gelé et reprend au clic sur **Reprendre**.
-- Le temps s’arrête à la fin de la partie, victoire ou défaite.
-- Une victoire en mode Protection enregistre `game.lastResult` avec les millisecondes exactes, le nombre d’étoiles et l’issue du récit. En duel, le résultat enregistre le mode et le camp vainqueur, sans étoiles.
+- En mode Protection, le chronomètre démarre au lancement de la partie et s’affiche dans l’interface. Le mode 2 joueurs n’a ni chronomètre ni défaite par temps écoulé.
+- `P` met la partie en pause ; en mode Protection, le temps est gelé et reprend au clic sur **Reprendre**.
+- En mode Protection, le temps s’arrête à la fin de la partie, victoire ou défaite.
+- Une victoire en mode Protection enregistre `game.lastResult` avec les millisecondes exactes, le nombre d’étoiles et l’issue du récit. En duel, le résultat enregistre le mode et le camp vainqueur, sans étoiles ni temps.
 - Le temps utilise `performance.now()` plutôt que l’addition des deltas de frames.
 
 ## Boucle de capture
