@@ -44,6 +44,7 @@ export class MenuView {
     this.victorValue = byId('stage-victor-value');
     this.victorFill = byId('stage-victor-fill');
     this.victorNext = byId('stage-victor-next');
+    this.victorCycle = [...document.querySelectorAll('#stage-victor-cycle [data-power]')];
     this.powerKey = '';
     this.victorKey = '';
     this.castPortraits = [...document.querySelectorAll('[data-cast]')];
@@ -91,12 +92,15 @@ export class MenuView {
   }
 
   /** The stage objective, controls and power panels follow the level. */
-  setStage(protectedCharacter = null) {
+  setStage(protectedCharacter = null, difficulty = null) {
     const protectedName = protectedCharacter?.name ?? 'la personne protégée';
+    const recharge = difficulty?.victorPowerInterval ?? 6;
+    const surge = difficulty?.victorPowerDuration ?? 3;
+    const fr = (value) => String(value).replace('.', ',');
 
     this.hudLabel.textContent = 'Frankenstein · nuit';
     this.hudTitle.textContent = `Atteindre ${protectedName}`;
-    this.hudObjective.textContent = `Vous êtes la Créature. Rejoignez ${protectedName} sans être touché par Victor, qui recharge 6 secondes puis bondit 3 secondes.`;
+    this.hudObjective.textContent = `Vous êtes la Créature. Rejoignez ${protectedName} sans être touché par Victor, qui recharge ${fr(recharge)} secondes puis bondit ${fr(surge)} secondes.`;
     this.pauseCopy.textContent = `La partie est en pause. ${protectedName} vous attend dans les ruelles.`;
     this.stageMoveHint.innerHTML =
       '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ou les flèches pour déplacer la Créature</span><span class="stage-bar__keys"><kbd>Espace</kbd></span><span>ruée</span>';
@@ -159,7 +163,8 @@ export class MenuView {
       : cooldown > 0.05
         ? `${Math.ceil(cooldown)} s`
         : 'Prêt';
-    const nextLabel = warning ? 'Rage imminente' : next?.label ? `Suivant : ${next.label}` : '';
+    const warningLabel = next?.warning ?? 'Pouvoir imminent';
+    const nextLabel = warning ? warningLabel : next?.label ? `Suivant : ${next.label}` : '';
     const key = `${value}|${surging}|${warning}|${Math.round(progress * 25)}|${nextLabel}`;
     if (key === this.victorKey) return;
     this.victorKey = key;
@@ -172,12 +177,18 @@ export class MenuView {
     this.victorElement.classList.toggle('is-ready', !surging && cooldown <= 0.05);
     this.victorNext.textContent = nextLabel;
     this.victorNext.hidden = !nextLabel;
+    for (const item of this.victorCycle) {
+      const id = item.dataset.power;
+      item.classList.toggle('is-current', Boolean(surging && power?.id === id));
+      item.classList.toggle('is-next', Boolean(!surging && next?.id === id));
+      item.classList.toggle('is-warning', Boolean(warning && next?.id === id));
+    }
     this.victorElement.setAttribute(
       'aria-label',
       surging
         ? `Pouvoir de Victor — ${power?.label ?? 'Rage'} : ${power?.note ?? 'il vous traque à pleine vitesse'}.`
         : warning
-          ? `Rage imminente : ${next?.label ?? 'Rage'} dans ${Math.ceil(cooldown)} secondes.`
+          ? `${warningLabel} dans ${Math.ceil(cooldown)} secondes.`
           : `Prochain pouvoir de Victor : ${next?.label ?? 'Rage'} dans ${Math.ceil(cooldown)} secondes.`,
     );
   }

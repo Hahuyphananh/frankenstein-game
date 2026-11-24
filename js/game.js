@@ -2,6 +2,7 @@ import {
   CREATURE_RULES,
   DIFFICULTIES,
   PLAYER_CREATURE_PROFILE,
+  VICTOR_POWER,
   VICTOR_POWERS,
   isDifficulty,
 } from './config.js';
@@ -122,6 +123,11 @@ export class Game {
       spawn: starts.victor,
       speed: difficulty.victorSpeed,
       surgeSpeed: difficulty.victorSurgeSpeed,
+      power: {
+        interval: difficulty.victorPowerInterval ?? VICTOR_POWER.interval,
+        duration: difficulty.victorPowerDuration ?? VICTOR_POWER.duration,
+        windup: difficulty.victorPowerWindup ?? VICTOR_POWER.windup,
+      },
       onBlink: (from, to) => this.renderer.blinkEffect(from, to),
     });
     this.creature = new PlayerCreature({
@@ -141,7 +147,7 @@ export class Game {
 
     this.view.hidePause();
     this.view.hideStageResult();
-    this.view.setStage(this.story.protectedCharacter);
+    this.view.setStage(this.story.protectedCharacter, difficulty);
     this.syncCreaturePower();
     this.syncVictorPower();
     this.renderer.setPlayer(this.player);

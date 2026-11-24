@@ -46,7 +46,7 @@
                       name="difficulty"
                       value="easy"
                     />
-                    <span class="segmented__face">Facile</span>
+                    <span class="segmented__face">ez</span>
                   </label>
                   <label class="segmented__opt">
                     <input
@@ -56,7 +56,7 @@
                       value="normal"
                       checked
                     />
-                    <span class="segmented__face">Normal</span>
+                    <span class="segmented__face">npc</span>
                   </label>
                   <label class="segmented__opt">
                     <input
@@ -65,7 +65,7 @@
                       name="difficulty"
                       value="hard"
                     />
-                    <span class="segmented__face">Difficile</span>
+                    <span class="segmented__face">harr</span>
                   </label>
                 </div>
               </fieldset>
@@ -121,6 +121,12 @@
                   <i class="power__fill" id="stage-victor-fill"></i>
                 </span>
                 <span class="power__next" id="stage-victor-next">Suivant : Rage</span>
+                <span class="power__cycle" id="stage-victor-cycle" aria-hidden="true">
+                  <span data-power="rage">Rage</span>
+                  <span data-power="eclair">Éclair</span>
+                  <span data-power="brume">Brume</span>
+                  <span data-power="pacte">Serment</span>
+                </span>
               </div>
               <div
                 class="power"
@@ -137,7 +143,7 @@
                   <i class="power__fill" id="stage-power-fill"></i>
                 </span>
               </div>
-              <span class="chip" id="stage-difficulty" data-level="normal">Normal</span>
+              <span class="chip" id="stage-difficulty" data-level="normal">npc</span>
               <button
                 class="btn btn--ghost btn--small sound-toggle"
                 data-sound-toggle
@@ -234,9 +240,9 @@
               Vous êtes la Créature, échappée dans un village victorien. Votre but : rejoindre
               la personne protégée, choisie au hasard entre Elizabeth, Henri Clerval et William
               Frankenstein, avant que Victor ne vous touche.              Victor est contrôlé par
-              l’intelligence du jeu : il suit votre trace et, après 6 secondes de recharge,
-              déclenche pendant 3 secondes l’un de ses pouvoirs. Une seule touche de Victor
-              met fin à la partie. Appuyez sur Espace pour déclencher la ruée de la Créature :
+              l’intelligence du jeu : il suit votre trace et, après un temps de recharge,
+              déclenche pendant quelques secondes l’un de ses pouvoirs. Une seule touche de
+              Victor met fin à la partie. Appuyez sur Espace pour déclencher la ruée de la Créature :
               elle dure 0,65 seconde, multiplie sa vitesse par 2,2, brise le premier mur
               qu’elle heurte et se recharge en 5 secondes. Le village est reconstruit à chaque
               partie, avec plusieurs entrées et des ruelles qui bouclent.
@@ -249,8 +255,8 @@
               Une partie se joue en solo. Vous dirigez la Créature avec WASD ou les flèches et
               déclenchez la ruée avec Espace. Victor, piloté par l’ordinateur, est un peu plus
               lent que vous au repos : profitez des boucles du village pour le semer. Après
-              6 secondes de recharge, sa jauge se vide et il libère pendant 3 secondes l’un
-              de ses quatre pouvoirs. Une seconde et demie avant, sa jauge clignote
+              sa recharge, sa jauge se vide et il libère pendant quelques secondes l’un de
+              ses quatre pouvoirs. Juste avant, sa jauge clignote
               en rouge, un signal sonore retentit et un anneau se charge autour de lui ; une
               ruée bien placée ou un virage dans une ruelle peut encore le faire passer à
               côté. Atteignez la personne protégée pour gagner.
@@ -260,9 +266,9 @@
           <section>
             <h3>Les pouvoirs de Victor</h3>
             <p>
-              Après 6 secondes de recharge, Victor libère pendant 3 secondes l’un de ses
-              quatre pouvoirs, toujours dans le même ordre : Rage, Éclair, Brume, Serment.
-              Chacun répond à un motif du roman.
+              À chaque recharge, Victor libère l’un de ses quatre pouvoirs, toujours dans le
+              même ordre : Rage, Éclair, Brume, Serment. Chacun répond à un motif du roman.
+              Le HUD affiche les quatre pouvoirs et met en avant le prochain.
             </p>
             <p>
               <strong>Rage</strong> — sa « rage insensée » contre sa propre créature : il vous
@@ -279,7 +285,7 @@
             <p>
               <strong>Serment</strong> — la promesse faite à Elizabeth et à sa famille : il
               abandonne la traque pour monter la garde auprès de la personne protégée pendant
-              3 secondes.
+              son assaut.
             </p>
           </section>
 
@@ -350,12 +356,13 @@
             <h3>Difficulté</h3>
             <p>
               Une seule touche de Victor met fin à la partie : apprenez à lire la jauge de sa
-              rage. Facile laisse Victor à 3,8 cases/s hors pouvoir et 5,0 pendant un pouvoir,
-              Normal à 4,6 et 6,0, Difficile à 5,2 et 7,0. La Créature se déplace à 5,2
-              cases/s dans toutes les difficultés. Sa ruée dure 0,65 seconde à 2,2 fois la
-              vitesse, brise le premier mur qu’elle heurte et se recharge en 5 secondes. La
-              personne protégée avance à 3,0, 3,5 et 3,9 cases/s selon la difficulté, erre
-              dans les rues et fuit lorsque la Créature approche.
+              rage. ez laisse Victor à 3,4 cases/s hors pouvoir et 4,6 pendant un pouvoir,
+              npc à 4,6 et 6,0, harr à 5,2 et 7,4. La Créature se déplace à 5,2 cases/s dans
+              toutes les difficultés. Sa ruée dure 0,65 seconde à 2,2 fois la vitesse, brise
+              le premier mur qu’elle heurte et se recharge en 5 secondes. Victor recharge
+              8, 6 et 4,5 secondes, prévient 2,2, 1,5 et 0,9 seconde, et bondit 2, 3 et
+              3,5 secondes. La personne protégée avance à 2,8, 3,5 et 4,0 cases/s selon la
+              difficulté, erre dans les rues et fuit lorsque la Créature approche.
             </p>
           </section>
 
