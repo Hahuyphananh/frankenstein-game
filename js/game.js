@@ -181,6 +181,7 @@ export class Game {
       cooldown: victor.powerCooldown,
       interval: victor.powerInterval,
       duration: victor.powerDuration,
+      speed: victor.speed,
       power: VICTOR_POWERS[victor.activePower] ?? VICTOR_POWERS.rage,
       next: VICTOR_POWERS[victor.nextPower] ?? null,
     });

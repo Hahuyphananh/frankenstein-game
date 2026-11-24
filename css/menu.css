@@ -1102,6 +1102,25 @@
   color: rgba(185, 74, 83, 0.82);
 }
 
+.power__speed {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  color: rgba(239, 232, 214, 0.38);
+  font-family: var(--mono);
+  font-size: 0.44rem;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.power__speed-value {
+  color: var(--victor-color);
+  font-variant-numeric: tabular-nums;
+}
+
 .power__next {
   color: rgba(239, 232, 214, 0.42);
   font-family: var(--mono);

@@ -43,6 +43,7 @@ export class MenuView {
     this.victorElement = byId('stage-victor');
     this.victorValue = byId('stage-victor-value');
     this.victorFill = byId('stage-victor-fill');
+    this.victorSpeed = byId('stage-victor-speed');
     this.victorNext = byId('stage-victor-next');
     this.victorCycle = [...document.querySelectorAll('#stage-victor-cycle [data-power]')];
     this.powerKey = '';
@@ -149,6 +150,7 @@ export class MenuView {
     cooldown = 0,
     interval = 6,
     duration = 3,
+    speed = 0,
     power = null,
     next = null,
   } = {}) {
@@ -164,7 +166,11 @@ export class MenuView {
         : 'Prêt';
     const warningLabel = next?.warning ?? 'Pouvoir imminent';
     const nextLabel = warning ? warningLabel : next?.label ? `Suivant : ${next.label}` : '';
-    const key = `${value}|${surging}|${warning}|${Math.round(progress * 25)}|${nextLabel}`;
+    const speedLabel =
+      Number.isFinite(speed) && speed > 0
+        ? `${String(Math.round(speed * 10) / 10).replace('.', ',')} c/s`
+        : '—';
+    const key = `${value}|${surging}|${warning}|${Math.round(progress * 25)}|${nextLabel}|${speedLabel}`;
     if (key === this.victorKey) return;
     this.victorKey = key;
 
@@ -173,6 +179,7 @@ export class MenuView {
     this.victorElement.style.setProperty('--victor-soft', colorPower?.soft ?? 'rgba(255, 92, 122, 0.1)');
     this.victorElement.dataset.power = colorPower?.id ?? 'rage';
     this.victorValue.textContent = value;
+    this.victorSpeed.textContent = speedLabel;
     this.victorFill.style.width = `${Math.round(progress * 100)}%`;
     this.victorElement.classList.toggle('is-active', surging);
     this.victorElement.classList.toggle('is-warning', warning);
@@ -189,7 +196,7 @@ export class MenuView {
     this.victorElement.setAttribute(
       'aria-label',
       surging
-        ? `Pouvoir de Victor — ${power?.label ?? 'Rage'} : ${power?.note ?? 'il vous traque à pleine vitesse'}.`
+        ? `Pouvoir de Victor — ${power?.label ?? 'Rage'} (${speedLabel}) : ${power?.note ?? 'il vous traque à pleine vitesse'}.`
         : warning
           ? `${warningLabel} dans ${Math.ceil(cooldown)} secondes.`
           : `Prochain pouvoir de Victor : ${next?.label ?? 'Rage'} dans ${Math.ceil(cooldown)} secondes.`,
