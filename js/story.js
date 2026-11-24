@@ -585,8 +585,9 @@ export class PlayerCreature extends StoryCreature {
   }
 
   /**
-   * Keep the player's heading while dashing and shatter any interior wall in
-   * the way, so Space opens a shortcut instead of stopping at the first stone.
+   * Keep the player's heading while dashing. The first interior wall in the
+   * way shatters and ends the dash, so the wall breaks instead of being
+   * phased through.
    */
   dashInInputDirection() {
     const direction = this.nextDirection ?? this.direction;
@@ -607,7 +608,15 @@ export class PlayerCreature extends StoryCreature {
       return;
     }
 
-    if (this.maze.tiles[row][col] === TILE.WALL) this.breakWall(col, row);
+    if (this.maze.tiles[row][col] === TILE.WALL) {
+      this.breakWall(col, row);
+      this.dashFor = 0;
+      this.speed = this.baseSpeed;
+      this.direction = null;
+      this.nextDirection = null;
+      return;
+    }
+
     this.direction = direction;
     this.nextDirection = null;
   }

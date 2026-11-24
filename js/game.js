@@ -130,6 +130,7 @@ export class Game {
       spawnPoints: CORNER_SPAWNS,
       profile: { ...PLAYER_CREATURE_PROFILE, speed: difficulty.creatureSpeed },
       rules: CREATURE_RULES,
+      onWallBreak: (wall) => this.wallBroken(wall),
     });
     this.story = new StoryLevel({
       maze: this.maze,

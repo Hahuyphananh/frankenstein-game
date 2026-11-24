@@ -18,12 +18,12 @@ export const CREATURE_RULES = Object.freeze({
   hitDistance: 0.7,
 });
 
-/** The player-controlled Creature: manual dash that smashes through walls. */
+/** The player-controlled Creature: a short dash that shatters one wall. */
 export const PLAYER_CREATURE_PROFILE = Object.freeze({
   strategy: 'evade',
   dashCooldown: 5,
-  dashDuration: 1.1,
-  dashMultiplier: 2.8,
+  dashDuration: 0.65,
+  dashMultiplier: 2.2,
   destroyWalls: true,
 });
 
