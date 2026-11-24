@@ -1102,6 +1102,59 @@
   color: rgba(185, 74, 83, 0.82);
 }
 
+.power__next {
+  color: rgba(239, 232, 214, 0.42);
+  font-family: var(--mono);
+  font-size: 0.46rem;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.power--victor.is-active .power__next {
+  color: #ff8095;
+}
+
+/* Victor's rage uses the blood palette instead of the Creature's gold. */
+.power--victor.is-active {
+  border-color: rgba(216, 51, 79, 0.6);
+  background: rgba(216, 51, 79, 0.1);
+}
+
+.power--victor.is-active .power__value {
+  color: #ff8095;
+}
+
+.power--victor.is-active .power__fill {
+  background: #d8334f;
+  box-shadow: 0 0 10px rgba(216, 51, 79, 0.7);
+}
+
+.power--victor.is-cooling .power__fill {
+  background: rgba(185, 74, 83, 0.55);
+}
+
+.power--victor.is-warning {
+  border-color: rgba(216, 51, 79, 0.8);
+  background: rgba(216, 51, 79, 0.14);
+  animation: victor-warning 0.5s ease-in-out infinite alternate;
+}
+
+.power--victor.is-warning .power__value,
+.power--victor.is-warning .power__next {
+  color: #ff8095;
+}
+
+@keyframes victor-warning {
+  from {
+    box-shadow: 0 0 0 rgba(216, 51, 79, 0);
+  }
+  to {
+    box-shadow: 0 0 14px rgba(216, 51, 79, 0.45);
+  }
+}
+
 @media (max-width: 540px) {
   .screen--menu {
     max-width: 100%;

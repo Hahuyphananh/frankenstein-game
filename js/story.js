@@ -7,6 +7,7 @@ import {
   canMove,
   isWalkableTile,
   walkableNeighbors,
+  walkableTiles,
 } from './maze.js';
 import {
   buildDashField,
@@ -30,12 +31,6 @@ export const STORY_RULES = Object.freeze({
   elizabethSpeed: 3.2,
   fleeRadius: 7,
   wanderContinueChance: 0.55,
-});
-
-/** Elizabeth is slower in the local duel, where the Creature has a manual dash. */
-export const DUEL_RULES = Object.freeze({
-  ...STORY_RULES,
-  elizabethSpeed: 1.8,
 });
 
 const OPPOSITE = Object.freeze({
@@ -234,13 +229,14 @@ export class Elizabeth extends GridActor {
 export class StoryLevel {
   constructor({
     maze,
-    elizabeth = ELIZABETH_SPAWN,
+    elizabeth = null,
     protectedCharacter = pickProtectedCharacter(),
     rules = STORY_RULES,
     rng = Math.random,
   } = {}) {
     if (!maze) throw new Error('StoryLevel: maze is required.');
-    if (!isWalkableTile(maze, elizabeth.col, elizabeth.row)) {
+    const spawn = elizabeth ?? walkableTiles(maze)[0];
+    if (!spawn || !isWalkableTile(maze, spawn.col, spawn.row)) {
       throw new Error('StoryLevel: protected person must start on a walkable tile.');
     }
 
@@ -254,7 +250,7 @@ export class StoryLevel {
     this.protectedCharacter = character;
     this.elizabeth = new Elizabeth({
       maze,
-      spawn: elizabeth,
+      spawn,
       speed: rules.elizabethSpeed,
       rng,
     });

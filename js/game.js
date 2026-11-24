@@ -1,27 +1,31 @@
-import { CREATURE_RULES, DIFFICULTIES, isDifficulty, isMode } from './config.js';
-import { arrowDirectionForKey, directionForKey, wasdDirectionForKey } from './input.js';
+import {
+  CREATURE_RULES,
+  DIFFICULTIES,
+  PLAYER_CREATURE_PROFILE,
+  VICTOR_POWERS,
+  isDifficulty,
+} from './config.js';
+import { directionForKey } from './input.js';
 import { GameLoop } from './loop.js';
 import {
   CORNER_SPAWNS,
   TILE,
-  chooseDuelStartPositions,
-  chooseStartPositions,
+  chooseHuntStartPositions,
+  generateMazeLayout,
   restoreMaze,
 } from './maze.js';
 import { MenuView } from './menu.js';
-import { Player } from './player.js';
 import {
-  DUEL_RULES,
   PlayerCreature,
-  StoryCreature,
+  STORY_RULES,
   StoryLevel,
   pickProtectedCharacter,
 } from './story.js';
-import { CountdownTimer, starsForTime } from './timer.js';
+import { VictorHunter } from './victor.js';
 
 /**
  * Application state machine. Owns the menu ⇄ stage transition, actors, the
- * countdown/collision/lives loop, pause state and results.
+ * pause state and results. The player is the Creature; Victor is AI.
  */
 export class Game {
   constructor({ settings, audio, renderer, keyboard, maze, persist }) {
@@ -31,24 +35,21 @@ export class Game {
     this.keyboard = keyboard;
     this.maze = maze;
     this.persist = persist;
-    this.mode = settings.mode === 'creature' ? 'creature' : 'guardian';
     this.screen = 'menu';
     this.stageStatus = 'idle';
     this.player = null;
     this.creature = null;
     this.story = null;
     this.currentDifficulty = null;
-    this.timer = null;
-    this.displayedSecond = null;
     this.lastResult = null;
     this.lastStarts = null;
+    this.warningPlayed = false;
 
     this.view = new MenuView({
       onPlay: () => this.play(),
       onPlayAgain: () => this.restart(),
       onBack: () => this.backToMenu(),
       onResume: () => this.resume(),
-      onMode: (id) => this.setMode(id),
       onDifficulty: (id) => this.setDifficulty(id),
       onSound: () => this.toggleSound(),
       onInstructions: () => this.openInstructions(),
@@ -74,43 +75,22 @@ export class Game {
     if (this.screen !== 'stage' || this.stageStatus !== 'playing') return;
     if (!this.player || !this.creature) return;
 
-    const now = performance.now();
-    if (this.timer) {
-      this.syncTimer(now);
+    const creature = this.creature;
 
-      if (this.timer.remaining(now) <= 0) {
-        this.loseLevel(now);
-        return;
-      }
-    }
-
-    if (this.mode === 'creature') {
-      this.player.update(dt);
-      this.story?.update(dt, { creature: this.creature });
-      this.creature.update(dt, { victor: this.player, goal: this.story?.goal });
-      this.syncCreaturePower();
-
-      // A Creature victory takes priority in a same-frame collision.
-      if (this.story?.creatureReachedElizabeth(this.creature)) {
-        this.finishCreatureRun('creature', now);
-        return;
-      }
-      if (this.creature.touches(this.player)) this.finishCreatureRun('victor', now);
-      return;
-    }
-
-    this.player.update(dt);
-    this.story?.update(dt, { creature: this.creature });
-    this.creature.update(dt, { victor: this.player, goal: this.story?.goal });
+    // Victor hunts the Creature; the Creature responds to player input and
+    // the protected person flees from the Creature.
+    this.player.update(dt, { goal: creature, protect: this.story?.elizabeth ?? null });
+    creature.update(dt);
+    this.story?.update(dt, { creature });
     this.syncCreaturePower();
+    this.syncVictorPower();
 
-    // The Creature's arrival at Elizabeth resolves before a same-frame catch.
-    if (this.story?.creatureReachedElizabeth(this.creature)) {
-      this.loseLevel(now, 'elizabeth');
+    // Reaching the protected person wins before a same-frame catch.
+    if (this.story?.creatureReachedElizabeth(creature)) {
+      this.endRun('won', 'creatureWin');
       return;
     }
-
-    this.checkCollision(now);
+    if (creature.touches(this.player)) this.endRun('lost', 'creatureCaught');
   }
 
   play() {
@@ -123,73 +103,46 @@ export class Game {
     this.audio.play('confirm');
   }
 
-  /** Create a fresh run: new actors, full lives, fresh countdown. */
+  /** Create a fresh run: new village, new actors, full dash charge. */
   startRun() {
     const difficulty = DIFFICULTIES[this.settings.difficulty] ?? DIFFICULTIES.normal;
-    const mode = this.settings.mode === 'creature' ? 'creature' : 'guardian';
 
-    restoreMaze(this.maze);
+    // Every run rebuilds the village, keeping multiple entrances and routes.
+    restoreMaze(this.maze, generateMazeLayout());
     this.renderer.refreshMaze();
-    this.mode = mode;
     this.currentDifficulty = difficulty;
     this.stageStatus = 'playing';
-    const starts =
-      mode === 'creature'
-        ? chooseDuelStartPositions(this.maze, { previous: this.lastStarts })
-        : chooseStartPositions(this.maze, { previous: this.lastStarts });
+    this.warningPlayed = false;
+
+    const starts = chooseHuntStartPositions(this.maze, { previous: this.lastStarts });
     this.lastStarts = starts;
-    this.player = new Player({
+
+    this.player = new VictorHunter({
       maze: this.maze,
       spawn: starts.victor,
-      speed: difficulty.playerSpeed,
+      speed: difficulty.victorSpeed,
+      surgeSpeed: difficulty.victorSurgeSpeed,
+      onBlink: (from, to) => this.renderer.blinkEffect(from, to),
+    });
+    this.creature = new PlayerCreature({
+      maze: this.maze,
+      spawn: starts.creature,
+      spawnPoints: CORNER_SPAWNS,
+      profile: { ...PLAYER_CREATURE_PROFILE, speed: difficulty.creatureSpeed },
+      rules: CREATURE_RULES,
     });
     this.story = new StoryLevel({
       maze: this.maze,
       elizabeth: starts.elizabeth,
       protectedCharacter: pickProtectedCharacter(),
-      rules: mode === 'creature' ? DUEL_RULES : undefined,
+      rules: { ...STORY_RULES, elizabethSpeed: difficulty.elizabethSpeed },
     });
-
-    if (mode === 'creature') {
-      this.creature = new PlayerCreature({
-        maze: this.maze,
-        spawn: starts.creature,
-        spawnPoints: CORNER_SPAWNS,
-        profile: {
-          ...difficulty.creature,
-          speed: difficulty.playerSpeed,
-          destroyWalls: false,
-          pathRecognition: false,
-        },
-        rules: { ...CREATURE_RULES, lives: 1 },
-      });
-    } else {
-      this.creature = new StoryCreature({
-        maze: this.maze,
-        spawn: starts.creature,
-        spawnPoints: CORNER_SPAWNS,
-        profile: difficulty.creature,
-        rules: CREATURE_RULES,
-        onWallBreak: (wall) => this.wallBroken(wall),
-      });
-    }
-    // The local duel has no countdown; only the protection mode is timed.
-    this.timer = mode === 'guardian'
-      ? new CountdownTimer({ limitSeconds: difficulty.timeLimit })
-      : null;
-    if (this.timer) {
-      this.timer.start(performance.now());
-      this.displayedSecond = difficulty.timeLimit;
-    } else {
-      this.displayedSecond = null;
-    }
 
     this.view.hidePause();
     this.view.hideStageResult();
-    this.view.setStageMode(mode, this.story.protectedCharacter);
-    if (this.timer) this.view.setTimer(difficulty.timeLimit, difficulty.timeLimit);
-    this.view.setCreatureLives(this.creature.lives, this.creature.maxLives);
+    this.view.setStage(this.story.protectedCharacter);
     this.syncCreaturePower();
+    this.syncVictorPower();
     this.renderer.setPlayer(this.player);
     this.renderer.setCreature(this.creature);
     this.renderer.setStory(this.story);
@@ -201,7 +154,7 @@ export class Game {
     this.audio.play('confirm');
   }
 
-  /** Keep the dash meter and wall-break count in the stage HUD. */
+  /** Keep the dash meter in the stage HUD. */
   syncCreaturePower() {
     const creature = this.creature;
     if (!creature) return;
@@ -210,26 +163,40 @@ export class Game {
       cooldown: creature.dashCooldownRemaining,
       limit: creature.profile.dashCooldown ?? 0,
       dashing: creature.dashing,
-      canBreakWalls: Boolean(creature.profile.destroyWalls),
-      wallsBroken: creature.wallsBrokenThisDash,
     });
   }
 
-  /** Now = timestamp; keeps the visual clock and expiry check in sync. */
-  syncTimer(now) {
-    if (!this.timer || !this.currentDifficulty) return;
-    const seconds = this.timer.remainingSeconds(now);
-    if (seconds === this.displayedSecond) return;
+  /** Keep Victor's rage countdown visible, since it is the main threat. */
+  syncVictorPower() {
+    const victor = this.player;
+    if (!victor) return;
 
-    this.displayedSecond = seconds;
-    this.view.setTimer(seconds, this.currentDifficulty.timeLimit);
+    // A single alarm sounds when the wind-up begins; the HUD keeps pulsing
+    // until the surge actually fires.
+    if (victor.warning && !this.warningPlayed) {
+      this.warningPlayed = true;
+      this.audio.play('alarm');
+    } else if (!victor.warning) {
+      this.warningPlayed = false;
+    }
+
+    this.view.setVictorPower({
+      warning: victor.warning,
+      windup: victor.windupFor,
+      surging: victor.surging,
+      remaining: victor.surgeRemaining,
+      cooldown: victor.powerCooldown,
+      interval: victor.powerInterval,
+      duration: victor.powerDuration,
+      power: VICTOR_POWERS[victor.activePower] ?? VICTOR_POWERS.rage,
+      next: VICTOR_POWERS[victor.nextPower] ?? null,
+    });
   }
 
   pause() {
     if (this.stageStatus !== 'playing') return;
 
     this.stageStatus = 'paused';
-    this.timer?.pause(performance.now());
     this.freezeActors();
     this.view.showPause();
     this.audio.play('open');
@@ -238,7 +205,6 @@ export class Game {
   resume() {
     if (this.stageStatus !== 'paused') return;
 
-    this.timer?.resume(performance.now());
     this.stageStatus = 'playing';
     this.view.hidePause();
     this.audio.play('close');
@@ -249,109 +215,27 @@ export class Game {
     else if (this.stageStatus === 'paused') this.resume();
   }
 
-  /**
-   * Victor is invulnerable; touching the Creature costs it one life. `hit()`
-   * sets respawn protection immediately, so continuous overlap cannot drain
-   * multiple lives from a single collision.
-   */
-  checkCollision(now) {
-    const creature = this.creature;
-    if (!creature || creature.invulnerable || creature.lives <= 0) return;
-    if (!creature.touches(this.player)) return;
-
-    const hitX = creature.x;
-    const hitY = creature.y;
-    if (!creature.hit(this.player)) return;
-
-    const final = creature.lives === 0;
-    this.renderer.catchEffect(hitX, hitY, { final });
-    this.renderer.lifeLost();
-    this.audio.play('hit');
-    this.view.setCreatureLives(creature.lives, creature.maxLives);
-    this.syncCreaturePower();
-
-    if (creature.lives === 0) this.winLevel(now);
-  }
-
-  winLevel(now = performance.now()) {
+  /** Resolve the run from the Creature's point of view. */
+  endRun(outcome, ending = 'creatureCaught') {
     if (this.stageStatus !== 'playing') return;
 
-    this.stageStatus = 'won';
-    const elapsedMs = this.timer.stop(now);
-    const stars = starsForTime(elapsedMs, this.currentDifficulty.starThresholds);
-    const story = this.story?.resolve('caught') ?? null;
-
-    this.freezeActors();
-    this.syncTimer(now);
-    this.lastResult = {
-      outcome: 'won',
-      difficulty: this.currentDifficulty.id,
-      elapsedMs,
-      stars,
-      story: story?.ending ?? null,
-    };
-    this.view.showStageResult({ outcome: 'won', elapsedMs, stars, story });
-    this.audio.play('win');
-  }
-
-  loseLevel(now = performance.now(), ending = 'timeout') {
-    if (this.stageStatus !== 'playing') return;
-
-    this.stageStatus = 'lost';
-    const elapsedMs = this.timer.stop(now);
+    const won = outcome === 'won';
+    this.stageStatus = won ? 'won' : 'lost';
     const story = this.story?.resolve(ending) ?? null;
 
     this.freezeActors();
-    this.displayedSecond = 0;
+    if (!won) {
+      this.renderer.catchEffect(this.creature.x, this.creature.y, { final: true });
+      this.renderer.lifeLost();
+    }
+
     this.lastResult = {
-      outcome: 'lost',
+      outcome: won ? 'won' : 'lost',
       difficulty: this.currentDifficulty.id,
-      elapsedMs,
-      stars: 0,
       cause: ending,
       story: story?.ending ?? null,
     };
-    this.view.setTimer(0, this.currentDifficulty.timeLimit);
-    this.view.showStageResult({ outcome: 'lost', elapsedMs, stars: 0, story });
-    this.audio.play('lose');
-  }
-
-  /** Resolve the local duel with the reverse win conditions of the story mode. */
-  finishCreatureRun(cause, now = performance.now()) {
-    if (this.stageStatus !== 'playing') return;
-
-    const endings = {
-      creature: 'creatureWin',
-      victor: 'creatureCaught',
-    };
-    const ending = endings[cause];
-    if (!ending) return;
-
-    const won = cause === 'creature';
-    this.stageStatus = won ? 'won' : 'lost';
-    const elapsedMs = this.timer?.stop(now) ?? 0;
-    const story = this.story?.resolve(ending) ?? null;
-
-    this.freezeActors();
-    if (cause === 'victor') this.view.setCreatureLives(0, this.creature.maxLives);
-
-    this.lastResult = {
-      outcome: won ? 'won' : 'lost',
-      mode: 'creature',
-      difficulty: this.currentDifficulty.id,
-      elapsedMs,
-      stars: 0,
-      cause,
-      story: story?.ending ?? null,
-    };
-    this.view.showStageResult({
-      outcome: won ? 'won' : 'lost',
-      elapsedMs,
-      stars: 0,
-      story,
-      showStars: false,
-      showTime: false,
-    });
+    this.view.showStageResult({ outcome: won ? 'won' : 'lost', story });
     this.audio.play(won ? 'win' : 'lose');
   }
 
@@ -361,12 +245,13 @@ export class Game {
     if (this.story?.elizabeth) this.story.elizabeth.moving = false;
   }
 
-  /** A dashing Creature shattered a wall; refresh terrain and path caches. */
+  /** Terrain changed; refresh the layers and the cached BFS fields. */
   wallBroken(wall) {
     this.maze.tiles[wall.row][wall.col] = TILE.EMPTY;
     this.renderer.refreshMaze();
     this.renderer.wallBreakEffect(wall.col, wall.row);
     this.creature?.invalidatePathing();
+    this.player?.invalidatePathing();
     this.story?.invalidatePathing();
     this.audio.play('shatter');
   }
@@ -374,8 +259,6 @@ export class Game {
   backToMenu() {
     if (this.screen === 'menu') return;
 
-    this.timer?.stop(performance.now());
-    this.timer = null;
     this.screen = 'menu';
     this.stageStatus = 'idle';
     this.player = null;
@@ -390,15 +273,6 @@ export class Game {
     this.view.showScreen('menu');
     this.renderer.setScreen('menu');
     this.audio.play('back');
-  }
-
-  setMode(id) {
-    if (!isMode(id)) return;
-    this.settings.mode = id;
-    this.mode = id;
-    this.view.setMode(id);
-    this.audio.play('move');
-    this.persist(this.settings);
   }
 
   setDifficulty(id) {
@@ -439,33 +313,16 @@ export class Game {
         return;
       }
 
-      if (this.mode === 'creature') {
-        if (event.code === 'Space') {
-          event.preventDefault();
-          if (this.stageStatus === 'playing') this.creature?.requestDash();
-          return;
-        }
-
-        const victorDirection = wasdDirectionForKey(event.code);
-        if (victorDirection) {
-          event.preventDefault();
-          if (this.stageStatus === 'playing') this.player?.requestDirection(victorDirection);
-        }
-
-        const creatureDirection = arrowDirectionForKey(event.code);
-        if (creatureDirection) {
-          event.preventDefault();
-          if (this.stageStatus === 'playing') {
-            this.creature?.requestDirection(creatureDirection);
-          }
-        }
+      if (event.code === 'Space') {
+        event.preventDefault();
+        if (this.stageStatus === 'playing') this.creature?.requestDash();
         return;
       }
 
       const direction = directionForKey(event.code);
       if (direction) {
         event.preventDefault();
-        if (this.stageStatus === 'playing') this.player?.requestDirection(direction);
+        if (this.stageStatus === 'playing') this.creature?.requestDirection(direction);
       }
       return;
     }

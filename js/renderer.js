@@ -15,22 +15,64 @@ const PROTECTED_SPRITES = Object.freeze({
   william: drawWilliam,
 });
 
-/** Wall-mounted gas lamps: all are solid wall tiles beside walkable floor. */
-const LAMPS = Object.freeze([
-  { col: 2, row: 2, phase: 0.2 },
-  { col: 8, row: 2, phase: 1.4 },
-  { col: 14, row: 2, phase: 2.6 },
-  { col: 20, row: 2, phase: 3.3 },
-  { col: 2, row: 11, phase: 1.8 },
-  { col: 8, row: 11, phase: 4.4 },
-  { col: 14, row: 11, phase: 0.9 },
-  { col: 20, row: 11, phase: 3.8 },
-]);
+/** Wall-mounted gas lamps are picked from wall tiles that face a street. */
+const LAMP_COUNT = 8;
 
 function noise(a, b, salt = 0) {
   let value = (a * 374761393 + b * 668265263 + salt * 2147483647) >>> 0;
   value = ((value ^ (value >>> 13)) * 1274126177) >>> 0;
   return ((value ^ (value >>> 16)) >>> 0) / 4294967295;
+}
+
+/**
+ * Lamps sit on walls that face a street. A farthest-point spread over those
+ * walls gives each generated village its own well-spaced light pattern.
+ */
+function collectLampCells(maze) {
+  const { tiles, columns, rows } = maze;
+  const candidates = [];
+
+  for (let row = 1; row < rows - 1; row += 1) {
+    for (let col = 1; col < columns - 1; col += 1) {
+      if (tiles[row][col] !== TILE.WALL) continue;
+      const facesStreet =
+        tiles[row - 1][col] !== TILE.WALL ||
+        tiles[row + 1][col] !== TILE.WALL ||
+        tiles[row][col - 1] !== TILE.WALL ||
+        tiles[row][col + 1] !== TILE.WALL;
+      if (facesStreet) candidates.push({ col, row });
+    }
+  }
+
+  if (!candidates.length) return [];
+
+  const chosen = [candidates[Math.floor(candidates.length * 0.37)]];
+  const wanted = Math.min(LAMP_COUNT, candidates.length);
+
+  while (chosen.length < wanted) {
+    let best = null;
+    let bestDistance = -1;
+
+    for (const cell of candidates) {
+      if (chosen.some((lamp) => lamp.col === cell.col && lamp.row === cell.row)) continue;
+      const distance = Math.min(
+        ...chosen.map(
+          (lamp) => Math.abs(lamp.col - cell.col) + Math.abs(lamp.row - cell.row),
+        ),
+      );
+      if (distance > bestDistance) {
+        bestDistance = distance;
+        best = cell;
+      }
+    }
+
+    if (!best) break;
+    chosen.push(best);
+  }
+
+  return chosen.map((cell) =>
+    Object.freeze({ ...cell, phase: noise(cell.col, cell.row, 9) * TAU }),
+  );
 }
 
 /**
@@ -73,9 +115,7 @@ export class StageRenderer {
         if (tile === TILE.WALL) this.wallCells.push({ c, r });
       });
     });
-    this.lampCells = LAMPS.filter(
-      (lamp) => this.maze.tiles[lamp.row]?.[lamp.col] === TILE.WALL,
-    );
+    this.lampCells = collectLampCells(this.maze);
 
     this.particles = Array.from({ length: 46 }, () => ({
       x: Math.random(),
@@ -108,9 +148,7 @@ export class StageRenderer {
         if (tile === TILE.WALL) this.wallCells.push({ c, r });
       });
     });
-    this.lampCells = LAMPS.filter(
-      (lamp) => this.maze.tiles[lamp.row]?.[lamp.col] === TILE.WALL,
-    );
+    this.lampCells = collectLampCells(this.maze);
     this.buildFloorLayer();
     this.buildWallLayer();
   }
@@ -152,6 +190,26 @@ export class StageRenderer {
       sparks,
     });
     this.flash = Math.max(this.flash, final ? 0.6 : 0.2);
+  }
+
+  /** Two cyan bursts when Victor's Éclair power blinks him across the village. */
+  blinkEffect(from, to) {
+    const sparks = () =>
+      Array.from({ length: 14 }, (_, index) => {
+        const angle = (index / 14) * TAU + Math.random() * 0.4;
+        const speed = 0.8 + Math.random() * 2.2;
+        return {
+          x: 0,
+          y: 0,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 0.2,
+          size: 1 + Math.floor(Math.random() * 3),
+        };
+      });
+
+    this.effects.push({ x: from.x, y: from.y, life: 0, ttl: 0.42, kind: 'blink', sparks: sparks() });
+    this.effects.push({ x: to.x, y: to.y, life: 0, ttl: 0.42, kind: 'blink', sparks: sparks() });
+    this.flash = Math.max(this.flash, 0.18);
   }
 
   /** Stone chips and a brief flash when a Hard-mode dash breaks a wall. */
@@ -490,6 +548,52 @@ export class StageRenderer {
     this.playerFacing = direction;
     const frame = this.player.moving ? Math.floor(this.time * 9) % 2 : 0;
 
+    const misty = Boolean(this.player.misty);
+
+    // A thin red ring charges around Victor during the wind-up, so the cue is
+    // visible on the board and not only in the HUD.
+    if (this.player.warning) {
+      const charge = this.animate ? 0.5 + 0.5 * Math.sin(this.time * 12) : 1;
+      this.ctx.save();
+      this.ctx.beginPath();
+      this.ctx.arc(point.x, point.y, this.camera.cell * 0.72, 0, TAU);
+      this.ctx.strokeStyle = `rgba(216, 51, 79, ${0.22 + charge * 0.34})`;
+      this.ctx.lineWidth = Math.max(1, this.camera.cell * 0.06);
+      this.ctx.stroke();
+      this.ctx.restore();
+    }
+
+    // Victor's rage is telegraphed with a red pulse; Brume replaces it with a
+    // pale mist that makes him spectral for the duration of the surge.
+    if (this.player.surging) {
+      const pulse = this.animate ? 0.5 + 0.5 * Math.sin(this.time * 8) : 0.8;
+      const radius = this.camera.cell * (0.9 + pulse * 0.3);
+      const glow = this.ctx.createRadialGradient(
+        point.x,
+        point.y,
+        0,
+        point.x,
+        point.y,
+        radius,
+      );
+      glow.addColorStop(
+        0,
+        misty
+          ? `rgba(190, 214, 211, ${0.2 + pulse * 0.1})`
+          : `rgba(216, 51, 79, ${0.28 + pulse * 0.14})`,
+      );
+      glow.addColorStop(1, misty ? 'rgba(190, 214, 211, 0)' : 'rgba(216, 51, 79, 0)');
+      this.ctx.save();
+      this.ctx.globalCompositeOperation = 'lighter';
+      this.ctx.fillStyle = glow;
+      this.ctx.beginPath();
+      this.ctx.arc(point.x, point.y, radius, 0, TAU);
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+
+    this.ctx.save();
+    if (misty) this.ctx.globalAlpha = 0.4;
     drawVictor(this.ctx, {
       x: point.x,
       y: point.y,
@@ -497,6 +601,7 @@ export class StageRenderer {
       direction,
       frame,
     });
+    this.ctx.restore();
   }
 
   drawCreatureSprite() {
@@ -805,15 +910,18 @@ export class StageRenderer {
       const point = this.camera.toScreen(effect.x, effect.y);
       const alpha = 1 - progress;
       const stone = effect.kind === 'stone';
+      const blink = effect.kind === 'blink';
       const radius = cell * (0.22 + progress * (effect.final ? 1.7 : 1.1));
 
       ctx.beginPath();
       ctx.arc(point.x, point.y, radius, 0, TAU);
-      ctx.strokeStyle = stone
-        ? `rgba(205, 220, 216, ${alpha * 0.72})`
-        : effect.final
-          ? `rgba(255, 225, 154, ${alpha * 0.9})`
-          : `rgba(244, 190, 96, ${alpha * 0.7})`;
+      ctx.strokeStyle = blink
+        ? `rgba(127, 183, 176, ${alpha * 0.85})`
+        : stone
+          ? `rgba(205, 220, 216, ${alpha * 0.72})`
+          : effect.final
+            ? `rgba(255, 225, 154, ${alpha * 0.9})`
+            : `rgba(244, 190, 96, ${alpha * 0.7})`;
       ctx.lineWidth = Math.max(1, cell * 0.055 * alpha);
       ctx.stroke();
 
@@ -826,11 +934,13 @@ export class StageRenderer {
       }
 
       for (const spark of effect.sparks) {
-        ctx.fillStyle = stone
-          ? `rgba(191, 207, 203, ${alpha * 0.9})`
-          : effect.final
-            ? `rgba(255, 220, 150, ${alpha})`
-            : `rgba(240, 184, 92, ${alpha * 0.9})`;
+        ctx.fillStyle = blink
+          ? `rgba(168, 226, 219, ${alpha})`
+          : stone
+            ? `rgba(191, 207, 203, ${alpha * 0.9})`
+            : effect.final
+              ? `rgba(255, 220, 150, ${alpha})`
+              : `rgba(240, 184, 92, ${alpha * 0.9})`;
         ctx.fillRect(
           Math.round(point.x + spark.x * cell),
           Math.round(point.y + spark.y * cell),

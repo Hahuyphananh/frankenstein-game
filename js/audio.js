@@ -25,6 +25,11 @@ const VOICES = {
     { f: 493.88, d: 0.1, type: 'triangle', gain: 0.06 },
     { f: 329.63, d: 0.16, type: 'triangle', gain: 0.06, at: 0.07 },
   ],
+  alarm: [
+    { f: 233.08, d: 0.12, type: 'square', gain: 0.05 },
+    { f: 174.61, d: 0.16, type: 'square', gain: 0.05, at: 0.13 },
+    { f: 233.08, d: 0.12, type: 'square', gain: 0.04, at: 0.3 },
+  ],
   hit: [
     { f: 196, d: 0.12, type: 'square', gain: 0.07 },
     { f: 130.81, d: 0.2, type: 'sawtooth', gain: 0.06, at: 0.03 },

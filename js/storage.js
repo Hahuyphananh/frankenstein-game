@@ -3,7 +3,7 @@
  * (private mode, disabled cookies, quota), so every access is defensive.
  */
 
-import { DEFAULT_SETTINGS, STORAGE_KEY, isDifficulty, isMode } from './config.js';
+import { DEFAULT_SETTINGS, STORAGE_KEY, isDifficulty } from './config.js';
 
 export function loadSettings() {
   try {
@@ -12,8 +12,9 @@ export function loadSettings() {
 
     const parsed = JSON.parse(raw);
     return {
-      mode: isMode(parsed?.mode) ? parsed.mode : DEFAULT_SETTINGS.mode,
-      difficulty: isDifficulty(parsed?.difficulty) ? parsed.difficulty : DEFAULT_SETTINGS.difficulty,
+      difficulty: isDifficulty(parsed?.difficulty)
+        ? parsed.difficulty
+        : DEFAULT_SETTINGS.difficulty,
       sound: typeof parsed?.sound === 'boolean' ? parsed.sound : DEFAULT_SETTINGS.sound,
     };
   } catch (error) {
@@ -27,7 +28,6 @@ export function saveSettings(settings) {
     window.localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        mode: settings.mode,
         difficulty: settings.difficulty,
         sound: settings.sound,
       }),

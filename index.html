@@ -37,31 +37,6 @@
               </button>
 
               <fieldset class="field">
-                <legend class="field__legend">Mode</legend>
-                <div class="segmented segmented--two">
-                  <label class="segmented__opt">
-                    <input
-                      class="segmented__input"
-                      type="radio"
-                      name="mode"
-                      value="guardian"
-                      checked
-                    />
-                    <span class="segmented__face">Protéger un proche</span>
-                  </label>
-                  <label class="segmented__opt">
-                    <input
-                      class="segmented__input"
-                      type="radio"
-                      name="mode"
-                      value="creature"
-                    />
-                    <span class="segmented__face">2 joueurs</span>
-                  </label>
-                </div>
-              </fieldset>
-
-              <fieldset class="field">
                 <legend class="field__legend">Difficulté</legend>
                 <div class="segmented">
                   <label class="segmented__opt">
@@ -125,26 +100,34 @@
           <header class="hud">
             <div class="hud__title-wrap">
               <p class="label" id="hud-mode-label">Village victorien · nuit</p>
-              <h2 class="hud__title" id="stage-title">Protection</h2>
+              <h2 class="hud__title" id="stage-title">Chasse</h2>
               <p class="hud__objective" id="stage-objective">
-                La Créature traque la personne protégée. Épuisez ses trois vies avant qu’elle ne l’atteigne.
+                Vous êtes la Créature. Rejoignez la personne protégée sans être touché par Victor.
               </p>
             </div>
             <div class="hud__actions">
               <div
-                class="timer"
-                id="stage-timer"
-                aria-label="Temps restant : 1:30 sur 1:30"
+                class="power power--victor"
+                id="stage-victor"
+                role="status"
+                aria-live="off"
+                aria-label="Rage de Victor : prête dans 10 secondes."
               >
-                <span class="timer__label">Temps</span>
-                <span class="timer__value" id="stage-timer-value">1:30</span>
+                <span class="power__head">
+                  <span class="power__label">Victor</span>
+                  <span class="power__value" id="stage-victor-value">10 s</span>
+                </span>
+                <span class="power__track" aria-hidden="true">
+                  <i class="power__fill" id="stage-victor-fill"></i>
+                </span>
+                <span class="power__next" id="stage-victor-next">Suivant : Rage</span>
               </div>
               <div
                 class="power"
                 id="stage-power"
                 role="status"
                 aria-live="off"
-                aria-label="Ruée de la Créature : prêt. Murs : brisables."
+                aria-label="Ruée de la Créature : prêt."
               >
                 <span class="power__head">
                   <span class="power__label">Ruée</span>
@@ -153,22 +136,6 @@
                 <span class="power__track" aria-hidden="true">
                   <i class="power__fill" id="stage-power-fill"></i>
                 </span>
-                <span class="power__wall" id="stage-wall-state" hidden>Murs : brisables</span>
-              </div>
-              <div
-                class="lives"
-                id="stage-lives"
-                role="status"
-                aria-live="polite"
-                aria-label="Vies restantes de la Créature : 3 sur 3"
-              >
-                <span class="lives__label">Créature</span>
-                <span class="lives__pips" aria-hidden="true">
-                  <i class="lives__pip"></i>
-                  <i class="lives__pip"></i>
-                  <i class="lives__pip"></i>
-                </span>
-                <span class="lives__count" id="stage-lives-count">3</span>
               </div>
               <span class="chip" id="stage-difficulty" data-level="normal">Normal</span>
               <button
@@ -189,7 +156,8 @@
               <span class="stage-bar__keys">
                 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
               </span>
-              <span>ou les flèches pour déplacer Victor</span>
+              <span>ou les flèches pour déplacer la Créature</span>
+              <span class="stage-bar__keys"><kbd>Espace</kbd></span><span>ruée</span>
             </p>
             <p class="stage-bar__hint">
               <span class="stage-bar__keys"><kbd>P</kbd></span><span>pause</span>
@@ -210,25 +178,6 @@
                 Victor capture la Créature avant qu’elle n’atteigne la personne protégée.
               </p>
               <p class="stage-result__epilogue" id="result-epilogue" hidden></p>
-              <dl class="result-stats">
-                <div class="result-stat">
-                  <dt class="result-stat__label" id="result-time-label">Temps réalisé</dt>
-                  <dd class="result-stat__value" id="result-time">0:00</dd>
-                </div>
-                <div class="result-stat">
-                  <dt class="result-stat__label">Note</dt>
-                  <dd
-                    class="result-stat__value result-stars"
-                    id="result-stars"
-                    role="img"
-                    aria-label="0 étoiles sur 3"
-                  >
-                    <span class="star" aria-hidden="true">★</span>
-                    <span class="star" aria-hidden="true">★</span>
-                    <span class="star" aria-hidden="true">★</span>
-                  </dd>
-                </div>
-              </dl>
               <div class="stage-result__actions">
                 <button class="btn btn--primary" id="btn-play-again" type="button">
                   Recommencer
@@ -282,32 +231,55 @@
           <section>
             <h3>Objectif</h3>
             <p>
-              Dans le mode Protection, la Créature s’est échappée dans un village victorien et
-              traque la personne protégée, qui se déplace dans les ruelles pavées. Chaque partie
-              choisit au hasard Elizabeth, Henri Clerval ou William Frankenstein. Victor peut la
-              toucher sans risque ; chaque contact coûte à la Créature une de ses trois vies et
-              l’envoie dans un autre coin. Attrapez-la trois fois avant qu’elle n’atteigne la
-              personne protégée. La Créature peut effectuer une ruée : sa recharge est de
-              2 secondes dans toutes les difficultés. Pendant une ruée, elle brise tous les murs
-              qu’elle traverse. Si elle atteint la personne protégée, celle-ci meurt ; si Victor
-              l’attrape d’abord, elle survit. Chaque partie place les trois personnages dans des
-              rues différentes.
+              Vous êtes la Créature, échappée dans un village victorien. Votre but : rejoindre
+              la personne protégée, choisie au hasard entre Elizabeth, Henri Clerval et William
+              Frankenstein, avant que Victor ne vous touche.              Victor est contrôlé par
+              l’intelligence du jeu : il suit votre trace et, toutes les 10 secondes, il
+              déclenche pendant 5 secondes l’un de ses pouvoirs à pleine vitesse. Une seule
+              touche de Victor met fin à la partie. Appuyez sur Espace pour déclencher la ruée de la Créature : elle dure
+              1,2 seconde, multiplie sa vitesse par trois et se recharge en 2 secondes. Le
+              village est reconstruit à chaque partie, avec plusieurs entrées et des ruelles
+              qui bouclent.
             </p>
           </section>
 
           <section>
-            <h3>Modes</h3>
+            <h3>Déroulement</h3>
             <p>
-              <strong>Protéger un proche</strong> est le mode solo : vous contrôlez Victor avec
-              WASD ou les flèches, et la Créature est dirigée par l’intelligence du jeu.
+              Une partie se joue en solo. Vous dirigez la Créature avec WASD ou les flèches et
+              déclenchez la ruée avec Espace. Victor, piloté par l’ordinateur, est un peu plus
+              lent que vous au repos : profitez des boucles du village pour le semer. Toutes
+              les 10 secondes, sa jauge se vide et il libère pendant 5 secondes l’un de ses
+              quatre pouvoirs, à pleine vitesse. Une seconde et demie avant, sa jauge clignote
+              en rouge, un signal sonore retentit et un anneau se charge autour de lui ; une
+              ruée bien placée ou un virage dans une ruelle peut encore le faire passer à
+              côté. Atteignez la personne protégée pour gagner.
+            </p>
+          </section>
+
+          <section>
+            <h3>Les pouvoirs de Victor</h3>
+            <p>
+              Toutes les 10 secondes, Victor libère pendant 5 secondes l’un de ses quatre
+              pouvoirs, toujours dans le même ordre : Rage, Éclair, Brume, Serment. Chacun
+              répond à un motif du roman.
             </p>
             <p>
-              <strong>2 joueurs</strong> est un duel local à deux sur le même clavier : le
-              joueur 1 contrôle Victor avec WASD, le joueur 2 contrôle la Créature avec les flèches.
-              La Créature n’a qu’une seule vie, se déplace à la même vitesse que Victor et peut
-              déclencher une ruée avec Espace, sans briser les murs. Elle commence dans un coin
-              proche de la personne protégée, tandis que Victor démarre plus loin. Atteignez-la
-              pour gagner ; si Victor vous touche, Victor gagne.
+              <strong>Rage</strong> — sa « rage insensée » contre sa propre créature : il vous
+              traque à pleine vitesse, comme il poursuit le monstre jusqu’aux glaces.
+            </p>
+            <p>
+              <strong>Éclair</strong> — l’étincelle de vie qu’il découvre en étudiant la foudre :
+              il disparaît dans un éclair et reparaît quelques cases plus près de vous.
+            </p>
+            <p>
+              <strong>Brume</strong> — les brumes des Alpes et des Orcades où la Créature
+              apparaît : il devient spectral et glisse vers vous sans qu’on le distingue bien.
+            </p>
+            <p>
+              <strong>Serment</strong> — la promesse faite à Elizabeth et à sa famille : il
+              abandonne la traque pour monter la garde auprès de la personne protégée pendant
+              5 secondes.
             </p>
           </section>
 
@@ -349,17 +321,15 @@
                 <span class="keys__combo"
                   ><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd></span
                 >
-                <span
-                  >Mode Protection : déplacer Victor. Mode 2 joueurs : déplacer la Créature.</span
-                >
+                <span>Déplacer la Créature.</span>
               </li>
               <li>
                 <span class="keys__combo"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
-                <span>Déplacer Victor dans les deux modes.</span>
+                <span>Déplacer la Créature (autre jeu de touches).</span>
               </li>
               <li>
                 <span class="keys__combo"><kbd>Espace</kbd></span>
-                <span>Mode 2 joueurs : déclencher la ruée de la Créature.</span>
+                <span>Déclencher la ruée de la Créature.</span>
               </li>
               <li>
                 <span class="keys__combo"><kbd>P</kbd></span>
@@ -379,27 +349,21 @@
           <section>
             <h3>Difficulté</h3>
             <p>
-              En mode Protection, Facile accorde 120 secondes, Normal 90 et Difficile 60. Plus vous
-              êtes rapide, plus vous gagnez d’étoiles. Chaque niveau donne trois vies à la
-              Créature et un autre coin après chaque contact. La recharge de ruée est de
-              2 secondes dans toutes les difficultés ; elle revient au même rythme et brise tous
-              les murs rencontrés. La personne protégée avance à 3,2 cases/s en Protection, erre
-              dans les rues et fuit lorsque la Créature approche. L’intelligence de la Créature
-              change aussi : en Facile, elle avance directement vers la personne protégée sans
-              reconnaître les chemins ; en Normal, elle suit le chemin le plus court ; en Difficile,
-              elle ajoute l’évitement de Victor à ce même chemin. Sa vitesse de base augmente
-              légèrement avec la difficulté, mais reste bien inférieure à celle de Victor. En mode
-              2 joueurs, la personne protégée avance à 1,8 case/s, les deux personnages vont à la
-              même vitesse, la Créature n’a qu’une vie, une ruée manuelle avec Espace (sans bris
-              de murs) et aucun chronomètre.
+              Une seule touche de Victor met fin à la partie : apprenez à lire la jauge de sa
+              rage. Facile laisse Victor à 3,8 cases/s hors pouvoir et 5,7 pendant un pouvoir,
+              Normal à 4,6 et 7,0, Difficile à 5,2 et 8,6. La Créature se déplace à 5,2
+              cases/s dans toutes les difficultés. Sa ruée est toujours de 1,2 seconde à trois
+              fois la vitesse, avec 2 secondes de recharge. La personne protégée avance à
+              3,0, 3,5 et 3,9 cases/s selon la difficulté, erre dans les rues et fuit lorsque
+              la Créature approche.
             </p>
           </section>
 
           <p class="modal__note">
-            Version actuelle : un niveau dans un village victorien, avec une personne protégée
-            mobile choisie au hasard, des ruelles en boucle, la ruée de la Créature, le bris de
-            murs dans toutes les difficultés et un duel local où vous incarnez la Créature. Il n’y
-            a pas encore de progression entre les niveaux.
+            Version actuelle : un village victorien régénéré à chaque partie, avec plusieurs
+            entrées et des ruelles en boucle, une personne protégée mobile choisie au hasard,
+            la ruée de la Créature et la rage périodique de Victor. Il n’y a pas encore de
+            progression entre les niveaux.
           </p>
         </div>
 

@@ -2,8 +2,10 @@
  * Maze data and helpers.
  *
  * The village is built from separated stone blocks with one-tile streets
- * around every block. That deliberately creates multiple looping routes, so
- * the Creature can circle a block instead of always taking one fixed path.
+ * around every block. The layout is generated anew for every run, so the
+ * village changes each game while still offering multiple entrances and
+ * looping routes: the Creature can circle a block instead of always taking
+ * one fixed path.
  *
  * Layout symbols:
  *   #  wall      .  cobbled street
@@ -39,27 +41,101 @@ export const CORNER_SPAWNS = Object.freeze([
 
 export const CREATURE_SPAWN = CORNER_SPAWNS[0];
 
-export const MAZE_LAYOUT = Object.freeze([
-  '#########################',
-  '#.......................#',
-  '#.##.##.##.##.##.##.##..#',
-  '#.##.##.##.##.##.##.##..#',
-  '#.......................#',
-  '#.##.##.##.##.##.##.##..#',
-  '#.##.##.##.##.##.##.##..#',
-  '#.......................#',
-  '#.##.##.##.##.##.##.##..#',
-  '#.##.##.##.##.##.##.##..#',
-  '#.......................#',
-  '#.##.##.##.##.##.##.##..#',
-  '#.##.##.##.##.##.##.##..#',
-  '#.......................#',
-  '#########################',
-]);
+export const DEFAULT_COLUMNS = 25;
+export const DEFAULT_ROWS = 15;
+
+/** Street lines keep every block at least two tiles thick. */
+function chooseStreetLines({ min, max, rng }) {
+  const lines = [];
+  let position = min + Math.floor(rng() * 3);
+  while (position <= max) {
+    lines.push(position);
+    position += 3 + (rng() < 0.3 ? 1 : 0);
+  }
+  return lines;
+}
+
+/**
+ * Build a fresh Victorian village.
+ *
+ * The perimeter is always a street ring, so all four corners stay valid
+ * Creature spawns and the village keeps several entrances. A random set of
+ * crossing streets then splits the interior into stone blocks; some blocks
+ * open into a small square or a one-tile alley, so routes loop instead of
+ * forming a single corridor. Every street tile is connected by construction.
+ */
+export function generateMazeLayout({
+  rng = Math.random,
+  columns = DEFAULT_COLUMNS,
+  rows = DEFAULT_ROWS,
+} = {}) {
+  if (columns < 11 || rows < 9) {
+    throw new Error('generateMazeLayout: maze is too small.');
+  }
+
+  const grid = Array.from({ length: rows }, () => new Array(columns).fill(TILE.WALL));
+  const left = 1;
+  const top = 1;
+  const right = columns - 2;
+  const bottom = rows - 2;
+
+  for (let col = left; col <= right; col += 1) {
+    grid[top][col] = TILE.PELLET;
+    grid[bottom][col] = TILE.PELLET;
+  }
+  for (let row = top; row <= bottom; row += 1) {
+    grid[row][left] = TILE.PELLET;
+    grid[row][right] = TILE.PELLET;
+  }
+
+  const streetCols = chooseStreetLines({ min: 4, max: columns - 5, rng });
+  const streetRows = chooseStreetLines({ min: 4, max: rows - 5, rng });
+
+  for (const col of streetCols) {
+    for (let row = top; row <= bottom; row += 1) grid[row][col] = TILE.PELLET;
+  }
+  for (const row of streetRows) {
+    for (let col = left; col <= right; col += 1) grid[row][col] = TILE.PELLET;
+  }
+
+  const colEdges = [left, ...streetCols, right];
+  const rowEdges = [top, ...streetRows, bottom];
+
+  for (let ci = 0; ci < colEdges.length - 1; ci += 1) {
+    for (let ri = 0; ri < rowEdges.length - 1; ri += 1) {
+      const startCol = colEdges[ci] + 1;
+      const endCol = colEdges[ci + 1] - 1;
+      const startRow = rowEdges[ri] + 1;
+      const endRow = rowEdges[ri + 1] - 1;
+      const width = endCol - startCol + 1;
+      const height = endRow - startRow + 1;
+      if (width < 2 || height < 2) continue;
+
+      const roll = rng();
+      if (roll < 0.14) {
+        // A small square joins the streets around the block.
+        for (let row = startRow; row <= endRow; row += 1) {
+          for (let col = startCol; col <= endCol; col += 1) grid[row][col] = TILE.PELLET;
+        }
+      } else if (roll < 0.5) {
+        // A one-tile alley cuts through the block as an extra route.
+        if (rng() < 0.5) {
+          const row = startRow + Math.floor(rng() * height);
+          for (let col = startCol; col <= endCol; col += 1) grid[row][col] = TILE.PELLET;
+        } else {
+          const col = startCol + Math.floor(rng() * width);
+          for (let row = startRow; row <= endRow; row += 1) grid[row][col] = TILE.PELLET;
+        }
+      }
+    }
+  }
+
+  return grid.map((cells) => cells.join(''));
+}
 
 const VALID_TILES = new Set(Object.values(TILE));
 
-export function buildMaze(layout = MAZE_LAYOUT) {
+export function buildMaze(layout = generateMazeLayout()) {
   const tiles = layout.map((row, index) => {
     if (row.length !== layout[0].length) {
       throw new Error(`Maze row ${index} has ${row.length} columns, expected ${layout[0].length}.`);
@@ -143,7 +219,9 @@ export function chooseStartPositions(maze, { rng = Math.random, previous = null 
     (tile) => !sameTile(tile, creature) && !sameTile(tile, previous?.elizabeth),
   );
   const elizabeth =
-    pickTile(targetPool.length ? targetPool : relaxedTargets, rng) ?? ELIZABETH_SPAWN;
+    pickTile(targetPool.length ? targetPool : relaxedTargets, rng) ??
+    pickTile(streets, rng) ??
+    ELIZABETH_SPAWN;
 
   const victorPool = streets.filter(
     (tile) =>
@@ -159,31 +237,39 @@ export function chooseStartPositions(maze, { rng = Math.random, previous = null 
       !sameTile(tile, elizabeth) &&
       !sameTile(tile, previous?.victor),
   );
-  const victor = pickTile(victorPool.length ? victorPool : relaxedVictors, rng) ?? PLAYER_SPAWN;
+  const victor =
+    pickTile(victorPool.length ? victorPool : relaxedVictors, rng) ??
+    pickTile(streets, rng) ??
+    PLAYER_SPAWN;
 
   return Object.freeze({ creature, victor, elizabeth });
 }
 
 /**
- * Duel placement: Elizabeth is close to the Creature's corner and Victor is
- * placed far enough away that both players have a meaningful race.
+ * Hunt placement: Elizabeth is close to the Creature's corner and Victor is
+ * placed far enough away that the chase starts with room to move.
  */
-export function chooseDuelStartPositions(maze, { rng = Math.random, previous = null } = {}) {
+export function chooseHuntStartPositions(maze, { rng = Math.random, previous = null } = {}) {
   const corners = CORNER_SPAWNS.filter((tile) => isWalkableTile(maze, tile.col, tile.row));
   const streets = walkableTiles(maze);
 
   const targetPool = streets.filter((tile) => !sameTile(tile, previous?.elizabeth));
   const elizabeth =
-    pickTile(targetPool.length ? targetPool : streets, rng) ?? ELIZABETH_SPAWN;
+    pickTile(targetPool.length ? targetPool : streets, rng) ??
+    pickTile(streets, rng) ??
+    ELIZABETH_SPAWN;
 
-  const nearestCorners = [...corners].sort(
-    (a, b) => manhattan(a, elizabeth) - manhattan(b, elizabeth),
+  // The Creature starts in one of the corners farthest from the protected
+  // person, so every run opens with a chase across the village.
+  const rankedCorners = [...corners].sort(
+    (a, b) => manhattan(b, elizabeth) - manhattan(a, elizabeth),
   );
-  const freshCorners = nearestCorners
-    .slice(0, 2)
-    .filter((tile) => !sameTile(tile, previous?.creature));
+  const startCorners = rankedCorners.slice(0, 2);
+  const freshCorners = startCorners.filter((tile) => !sameTile(tile, previous?.creature));
   const creature =
-    pickTile(freshCorners.length ? freshCorners : nearestCorners, rng) ?? CREATURE_SPAWN;
+    pickTile(freshCorners.length ? freshCorners : startCorners, rng) ??
+    pickTile(corners, rng) ??
+    CREATURE_SPAWN;
 
   const victorPool = streets.filter(
     (tile) =>
@@ -199,12 +285,16 @@ export function chooseDuelStartPositions(maze, { rng = Math.random, previous = n
       !sameTile(tile, elizabeth) &&
       manhattan(tile, creature) >= 10,
   );
-  const victor = pickTile(victorPool.length ? victorPool : relaxedVictors, rng) ?? PLAYER_SPAWN;
+  const victor =
+    pickTile(victorPool.length ? victorPool : relaxedVictors, rng) ??
+    pickTile(streets, rng) ??
+    PLAYER_SPAWN;
 
   return Object.freeze({ creature, victor, elizabeth });
 }
 
-export function restoreMaze(maze, layout = MAZE_LAYOUT) {
+/** Load a generated layout into the shared, long-lived maze object. */
+export function restoreMaze(maze, layout) {
   if (!maze || layout.length !== maze.rows) {
     throw new Error('restoreMaze: layout does not match the maze.');
   }
@@ -217,4 +307,5 @@ export function restoreMaze(maze, layout = MAZE_LAYOUT) {
   return maze;
 }
 
+/** The renderer and game share one maze object; each run rewrites its tiles. */
 export const MAZE = buildMaze();
