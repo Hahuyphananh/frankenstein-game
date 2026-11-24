@@ -86,6 +86,10 @@
   gap: 10px;
 }
 
+.btn--records {
+  width: 100%;
+}
+
 .btn--play {
   width: 100%;
   min-height: 62px;
@@ -604,6 +608,19 @@
   display: none;
 }
 
+.stage-result__record {
+  margin: 12px 0 0;
+  color: var(--acid);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stage-result__record[hidden] {
+  display: none;
+}
+
 .result-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -615,6 +632,10 @@
 
 .result-stats--single {
   grid-template-columns: 1fr;
+}
+
+.result-stats[hidden] {
+  display: none;
 }
 
 .result-stat {
@@ -866,6 +887,107 @@
 
 .modal__foot .btn {
   min-width: 150px;
+}
+
+.modal--leaderboard {
+  width: min(860px, calc(100vw - 32px));
+}
+
+.leaderboard__groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.leaderboard__group {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: rgba(214, 179, 106, 0.025);
+}
+
+.leaderboard__group h3 {
+  margin-bottom: 10px;
+}
+
+.leaderboard__group[data-level="easy"] h3 {
+  color: var(--plasma);
+}
+
+.leaderboard__group[data-level="normal"] h3 {
+  color: var(--acid);
+}
+
+.leaderboard__group[data-level="hard"] h3 {
+  color: #ff8095;
+}
+
+.leaderboard__list {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.leaderboard__item {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(239, 232, 214, 0.08);
+}
+
+.leaderboard__item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.leaderboard__rank {
+  width: 1.3em;
+  color: rgba(239, 232, 214, 0.34);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard__entry {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.leaderboard__time {
+  color: var(--bone);
+  font-family: var(--mono);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.leaderboard__meta {
+  overflow: hidden;
+  color: rgba(239, 232, 214, 0.4);
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.leaderboard__empty {
+  color: rgba(239, 232, 214, 0.38);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 700px) {
+  .leaderboard__groups {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* --------------------------------------------------------------------------

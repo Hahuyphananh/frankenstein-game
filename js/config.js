@@ -5,6 +5,8 @@
  */
 
 export const STORAGE_KEY = 'frankenstein:settings:v1';
+export const LEADERBOARD_KEY = 'frankenstein:leaderboard:v1';
+export const LEADERBOARD_LIMIT = 5;
 
 export const DEFAULT_SETTINGS = Object.freeze({
   difficulty: 'normal',

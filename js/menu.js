@@ -1,5 +1,6 @@
-import { DIFFICULTIES } from './config.js';
+import { DIFFICULTIES, DIFFICULTY_ORDER } from './config.js';
 import { drawCastPortrait } from './sprites.js';
+import { formatRunTime } from './timer.js';
 
 /**
  * DOM controller for the menu, stage shell and instructions dialog.
@@ -34,6 +35,9 @@ export class MenuView {
     this.playAgainButton = byId('btn-play-again');
     this.resultLabel = byId('result-label');
     this.resultEpilogue = byId('result-epilogue');
+    this.resultStats = byId('result-stats');
+    this.resultTime = byId('result-time');
+    this.resultRecord = byId('result-record');
     this.pauseOverlay = byId('stage-pause');
     this.pauseCopy = byId('pause-copy');
     this.resumeButton = byId('btn-resume');
@@ -46,8 +50,14 @@ export class MenuView {
     this.victorSpeed = byId('stage-victor-speed');
     this.victorNext = byId('stage-victor-next');
     this.victorCycle = [...document.querySelectorAll('#stage-victor-cycle [data-power]')];
+    this.timerElement = byId('stage-timer');
+    this.timerValue = byId('stage-timer-value');
+    this.leaderboardButton = byId('btn-leaderboard');
+    this.leaderboardDialog = byId('leaderboard-dialog');
+    this.leaderboardGroups = byId('leaderboard-groups');
     this.powerKey = '';
     this.victorKey = '';
+    this.runTimeKey = '';
     this.castPortraits = [...document.querySelectorAll('[data-cast]')];
 
     this.bind(byId);
@@ -67,6 +77,9 @@ export class MenuView {
     this.instructionsButton.addEventListener('click', () => handlers.onInstructions?.());
     byId('btn-close-instructions').addEventListener('click', () => this.dialog.close());
     byId('btn-close-instructions-2').addEventListener('click', () => this.dialog.close());
+    this.leaderboardButton.addEventListener('click', () => handlers.onLeaderboard?.());
+    byId('btn-close-leaderboard').addEventListener('click', () => this.leaderboardDialog.close());
+    byId('btn-close-leaderboard-2').addEventListener('click', () => this.leaderboardDialog.close());
 
     this.radios.forEach((radio) => {
       radio.addEventListener('change', () => {
@@ -81,6 +94,10 @@ export class MenuView {
     this.dialog.addEventListener('close', () => handlers.onInstructionsClosed?.());
     this.dialog.addEventListener('click', (event) => {
       if (event.target === this.dialog) this.dialog.close();
+    });
+    this.leaderboardDialog.addEventListener('close', () => handlers.onLeaderboardClosed?.());
+    this.leaderboardDialog.addEventListener('click', (event) => {
+      if (event.target === this.leaderboardDialog) this.leaderboardDialog.close();
     });
   }
 
@@ -113,6 +130,14 @@ export class MenuView {
     if (!difficulty) return;
     this.difficultyChip.textContent = difficulty.label;
     this.difficultyChip.dataset.level = difficulty.id;
+  }
+
+  setRunTime(elapsedMs = 0) {
+    const label = formatRunTime(elapsedMs);
+    if (label === this.runTimeKey) return;
+    this.runTimeKey = label;
+    this.timerValue.textContent = label;
+    this.timerElement.setAttribute('aria-label', `Temps de la partie : ${label}.`);
   }
 
   setCreaturePower({ enabled = true, cooldown = 0, limit = 0, dashing = false } = {}) {
@@ -212,7 +237,13 @@ export class MenuView {
     this.pauseOverlay.hidden = true;
   }
 
-  showStageResult({ outcome = 'won', story = null } = {}) {
+  showStageResult({
+    outcome = 'won',
+    story = null,
+    timeMs = null,
+    record = null,
+    mapLabel = '',
+  } = {}) {
     const lost = outcome === 'lost';
     const title = this.stageResult.querySelector('#stage-result-title');
     const copy = this.stageResult.querySelector('#stage-result-copy');
@@ -233,9 +264,76 @@ export class MenuView {
       this.resultEpilogue.hidden = true;
     }
 
+    const hasTime = Number.isFinite(timeMs) && timeMs >= 0;
+    this.resultStats.hidden = !hasTime;
+    this.resultTime.textContent = hasTime
+      ? `${formatRunTime(timeMs)}${mapLabel ? ` · ${mapLabel}` : ''}`
+      : '';
+    this.resultRecord.hidden = !record?.entry;
+    this.resultRecord.textContent = record?.entry
+      ? record.isBest
+        ? 'Nouveau record local sur cette difficulté.'
+        : `${record.rank}e temps local sur cette difficulté.`
+      : '';
+
     this.playAgainButton.textContent = 'Recommencer';
     this.stageResult.hidden = false;
     window.requestAnimationFrame(() => this.playAgainButton.focus({ preventScroll: true }));
+  }
+
+  showLeaderboard(runs = []) {
+    const safeRuns = Array.isArray(runs) ? runs : [];
+    this.leaderboardGroups.replaceChildren();
+
+    for (const difficulty of DIFFICULTY_ORDER) {
+      const entries = safeRuns
+        .filter((entry) => entry?.difficulty === difficulty)
+        .slice(0, 5);
+      const group = document.createElement('section');
+      group.className = 'leaderboard__group';
+      group.dataset.level = difficulty;
+
+      const heading = document.createElement('h3');
+      heading.textContent = DIFFICULTIES[difficulty]?.label ?? difficulty;
+      group.append(heading);
+
+      if (!entries.length) {
+        const empty = document.createElement('p');
+        empty.className = 'leaderboard__empty';
+        empty.textContent = 'Aucun temps enregistré.';
+        group.append(empty);
+      } else {
+        const list = document.createElement('ol');
+        list.className = 'leaderboard__list';
+        entries.forEach((entry, index) => {
+          const item = document.createElement('li');
+          item.className = 'leaderboard__item';
+
+          const rank = document.createElement('span');
+          rank.className = 'leaderboard__rank';
+          rank.textContent = String(index + 1);
+
+          const body = document.createElement('span');
+          body.className = 'leaderboard__entry';
+          const time = document.createElement('span');
+          time.className = 'leaderboard__time';
+          time.textContent = formatRunTime(entry.timeMs);
+          const meta = document.createElement('span');
+          meta.className = 'leaderboard__meta';
+          meta.textContent =
+            [entry.characterName, entry.mapLabel].filter(Boolean).join(' · ') ||
+            'Village';
+          body.append(time, meta);
+          item.append(rank, body);
+          list.append(item);
+        });
+        group.append(list);
+      }
+
+      this.leaderboardGroups.append(group);
+    }
+
+    if (!this.leaderboardDialog.open) this.leaderboardDialog.showModal();
   }
 
   hideStageResult() {
@@ -271,6 +369,6 @@ export class MenuView {
   }
 
   isDialogOpen() {
-    return this.dialog.open;
+    return this.dialog.open || this.leaderboardDialog.open;
   }
 }

@@ -133,6 +133,41 @@ export function generateMazeLayout({
   return grid.map((cells) => cells.join(''));
 }
 
+/** Deterministic random source so the reusable village pool survives reloads. */
+function seededRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const MAP_SEEDS = Object.freeze([
+  0x9e3779b9,
+  0x243f6a88,
+  0xb7e15162,
+  0xdeadbeef,
+  0x12345678,
+  0x0badf00d,
+  0xc0ffee,
+  0xfeedface,
+]);
+
+/** Eight stable villages, generated once and reused across runs. */
+export const MAP_POOL = Object.freeze(
+  MAP_SEEDS.map((seed, index) => {
+    const layout = Object.freeze(generateMazeLayout({ rng: seededRandom(seed) }));
+    return Object.freeze({
+      id: `village-${index + 1}`,
+      label: `Village ${index + 1}`,
+      layout,
+    });
+  }),
+);
+
 const VALID_TILES = new Set(Object.values(TILE));
 
 export function buildMaze(layout = generateMazeLayout()) {
@@ -308,4 +343,4 @@ export function restoreMaze(maze, layout) {
 }
 
 /** The renderer and game share one maze object; each run rewrites its tiles. */
-export const MAZE = buildMaze();
+export const MAZE = buildMaze(MAP_POOL[0].layout);

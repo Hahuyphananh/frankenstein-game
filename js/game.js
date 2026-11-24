@@ -9,12 +9,14 @@ import { directionForKey } from './input.js';
 import { GameLoop } from './loop.js';
 import {
   CORNER_SPAWNS,
+  MAP_POOL,
   TILE,
   chooseHuntStartPositions,
-  generateMazeLayout,
   restoreMaze,
 } from './maze.js';
 import { MenuView } from './menu.js';
+import { RunTimer } from './timer.js';
+import { loadLeaderboard, recordLeaderboardRun } from './storage.js';
 import {
   PlayerCreature,
   STORY_RULES,
@@ -44,6 +46,9 @@ export class Game {
     this.lastResult = null;
     this.lastStarts = null;
     this.warningPlayed = false;
+    this.runTimer = new RunTimer();
+    this.mapIndex = 0;
+    this.currentMap = null;
 
     this.view = new MenuView({
       onPlay: () => this.play(),
@@ -54,6 +59,8 @@ export class Game {
       onSound: () => this.toggleSound(),
       onInstructions: () => this.openInstructions(),
       onInstructionsClosed: () => this.audio.play('close'),
+      onLeaderboard: () => this.openLeaderboard(),
+      onLeaderboardClosed: () => this.audio.play('close'),
     });
 
     this.loop = new GameLoop({
@@ -75,6 +82,7 @@ export class Game {
     if (this.screen !== 'stage' || this.stageStatus !== 'playing') return;
     if (!this.player || !this.creature) return;
 
+    this.view.setRunTime(this.runTimer.elapsed());
     const creature = this.creature;
 
     // Victor hunts the Creature; the Creature responds to player input and
@@ -103,12 +111,16 @@ export class Game {
     this.audio.play('confirm');
   }
 
-  /** Create a fresh run: new village, new actors, full dash charge. */
+  /** Create a fresh run: next stable village, new actors, full dash charge. */
   startRun() {
     const difficulty = DIFFICULTIES[this.settings.difficulty] ?? DIFFICULTIES.normal;
 
-    // Every run rebuilds the village, keeping multiple entrances and routes.
-    restoreMaze(this.maze, generateMazeLayout());
+    // Cycle through eight pre-generated villages. They stay identical between
+    // reloads, so a local fastest time can be compared with the same maps.
+    const map = MAP_POOL[this.mapIndex % MAP_POOL.length];
+    this.mapIndex = (this.mapIndex + 1) % MAP_POOL.length;
+    this.currentMap = map;
+    restoreMaze(this.maze, map.layout);
     this.renderer.refreshMaze();
     this.currentDifficulty = difficulty;
     this.stageStatus = 'playing';
@@ -148,6 +160,8 @@ export class Game {
     this.renderer.setPlayer(this.player);
     this.renderer.setCreature(this.creature);
     this.renderer.setStory(this.story);
+    this.runTimer.start();
+    this.view.setRunTime(0);
   }
 
   restart() {
@@ -191,6 +205,8 @@ export class Game {
     if (this.stageStatus !== 'playing') return;
 
     this.stageStatus = 'paused';
+    this.runTimer.pause();
+    this.view.setRunTime(this.runTimer.elapsed());
     this.freezeActors();
     this.view.showPause();
     this.audio.play('open');
@@ -200,6 +216,7 @@ export class Game {
     if (this.stageStatus !== 'paused') return;
 
     this.stageStatus = 'playing';
+    this.runTimer.resume();
     this.view.hidePause();
     this.audio.play('close');
   }
@@ -215,6 +232,8 @@ export class Game {
 
     const won = outcome === 'won';
     this.stageStatus = won ? 'won' : 'lost';
+    const timeMs = Math.max(10, Math.round(this.runTimer.stop() / 10) * 10);
+    this.view.setRunTime(timeMs);
     const story = this.story?.resolve(ending) ?? null;
 
     this.freezeActors();
@@ -223,13 +242,36 @@ export class Game {
       this.renderer.lifeLost();
     }
 
+    let record = null;
+    if (won) {
+      const character = this.story?.protectedCharacter;
+      record = recordLeaderboardRun({
+        difficulty: this.currentDifficulty.id,
+        timeMs,
+        characterId: character?.id ?? '',
+        characterName: character?.name ?? '',
+        mapId: this.currentMap?.id ?? '',
+        mapLabel: this.currentMap?.label ?? '',
+        at: new Date().toISOString(),
+      });
+    }
+
     this.lastResult = {
       outcome: won ? 'won' : 'lost',
       difficulty: this.currentDifficulty.id,
       cause: ending,
       story: story?.ending ?? null,
+      timeMs,
+      mapId: this.currentMap?.id ?? null,
+      record,
     };
-    this.view.showStageResult({ outcome: won ? 'won' : 'lost', story });
+    this.view.showStageResult({
+      outcome: won ? 'won' : 'lost',
+      story,
+      timeMs,
+      record,
+      mapLabel: this.currentMap?.label ?? '',
+    });
     this.audio.play(won ? 'win' : 'lose');
   }
 
@@ -255,6 +297,8 @@ export class Game {
 
     this.screen = 'menu';
     this.stageStatus = 'idle';
+    this.runTimer.stop();
+    this.currentMap = null;
     this.player = null;
     this.creature = null;
     this.story = null;
@@ -288,6 +332,11 @@ export class Game {
   openInstructions() {
     this.audio.play('open');
     this.view.openInstructions();
+  }
+
+  openLeaderboard() {
+    this.audio.play('open');
+    this.view.showLeaderboard(loadLeaderboard());
   }
 
   handleKey(event) {

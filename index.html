@@ -84,6 +84,10 @@
                   <span data-sound-label>Son activé</span>
                 </button>
               </div>
+
+              <button class="btn btn--ghost btn--records" id="btn-leaderboard" type="button">
+                Records
+              </button>
             </nav>
 
           </div>
@@ -147,6 +151,16 @@
                   <i class="power__fill" id="stage-power-fill"></i>
                 </span>
               </div>
+              <div
+                class="timer"
+                id="stage-timer"
+                role="timer"
+                aria-live="off"
+                aria-label="Temps de la partie : 0:00,0."
+              >
+                <span class="timer__label">Temps</span>
+                <span class="timer__value" id="stage-timer-value">0:00,0</span>
+              </div>
               <span class="chip" id="stage-difficulty" data-level="normal">npc</span>
               <button
                 class="btn btn--ghost btn--small sound-toggle"
@@ -187,6 +201,13 @@
               <p class="stage-result__copy" id="stage-result-copy">
                 Victor capture la Créature avant qu’elle n’atteigne la personne protégée.
               </p>
+              <div class="result-stats result-stats--single" id="result-stats" hidden>
+                <div class="result-stat">
+                  <span class="result-stat__label">Temps</span>
+                  <p class="result-stat__value" id="result-time">0:00,0</p>
+                </div>
+              </div>
+              <p class="stage-result__record" id="result-record" hidden></p>
               <p class="stage-result__epilogue" id="result-epilogue" hidden></p>
               <div class="stage-result__actions">
                 <button class="btn btn--primary" id="btn-play-again" type="button">
@@ -249,8 +270,8 @@
               Victor met fin à la partie. Appuyez sur Espace pour déclencher la ruée de la Créature :
               elle dure 0,65 seconde, multiplie sa vitesse par 2,2 et peut briser jusqu’à quatre
               murs alignés dans la direction engagée. Changer de direction interrompt la ruée ;
-              elle se recharge en 5 secondes. Le village est reconstruit à chaque partie, avec
-              plusieurs entrées et des ruelles qui bouclent.
+              elle se recharge en 5 secondes. Huit villages victoriens sont générés une seule
+              fois puis revisités à tour de rôle, avec plusieurs entrées et des ruelles qui bouclent.
             </p>
           </section>
 
@@ -263,7 +284,8 @@
               est toujours sous l’un de ses quatre pouvoirs et change toutes les quelques
               secondes, sans pause. Sa jauge montre le pouvoir en cours et le suivant ; une
               ruée bien placée ou un virage dans une ruelle peut encore le faire passer à
-              côté. Atteignez la personne protégée pour gagner.
+              côté. Atteignez la personne protégée le plus vite possible pour gagner et
+              enregistrer un temps dans les records locaux.
             </p>
           </section>
 
@@ -358,6 +380,16 @@
           </section>
 
           <section>
+            <h3>Chronomètre et records</h3>
+            <p>
+              Le chronomètre démarre au début de chaque course et se met en pause avec le jeu.
+              Il s’arrête dès que la Créature atteint la personne protégée. Les cinq meilleurs
+              temps de chaque difficulté sont conservés sur cet appareil et consultables via
+              le bouton Records du menu.
+            </p>
+          </section>
+
+          <section>
             <h3>Difficulté</h3>
             <p>
               Une seule touche de Victor met fin à la partie : apprenez à lire la jauge de sa
@@ -374,16 +406,51 @@
           </section>
 
           <p class="modal__note">
-            Version actuelle : un village victorien régénéré à chaque partie, avec plusieurs
-            entrées et des ruelles en boucle, une personne protégée mobile choisie au hasard,
-            la ruée de la Créature et les pouvoirs permanents de Victor. Il n’y a pas encore
-            de progression entre les niveaux.
+            Version actuelle : huit villages victoriens générés une seule fois et revisités,
+            une personne protégée mobile choisie au hasard, la ruée de la Créature, les pouvoirs
+            permanents de Victor et un chronomètre avec cinq records locaux par difficulté.
           </p>
         </div>
 
         <footer class="modal__foot">
           <button class="btn btn--primary" id="btn-close-instructions-2" type="button">
             Compris
+          </button>
+        </footer>
+      </div>
+    </dialog>
+
+    <dialog
+      class="modal modal--leaderboard"
+      id="leaderboard-dialog"
+      aria-labelledby="leaderboard-title"
+      aria-describedby="leaderboard-intro"
+    >
+      <div class="modal__inner">
+        <header class="modal__head">
+          <p class="label">Tableau des records</p>
+          <h2 class="modal__title" id="leaderboard-title">Meilleurs temps</h2>
+          <button
+            class="modal__close"
+            id="btn-close-leaderboard"
+            type="button"
+            aria-label="Fermer les records"
+          >
+            &times;
+          </button>
+        </header>
+
+        <div class="modal__body">
+          <p class="leaderboard__intro" id="leaderboard-intro">
+            Les courses gagnées les plus rapides, par difficulté. Les temps sont enregistrés
+            sur cet appareil.
+          </p>
+          <div class="leaderboard__groups" id="leaderboard-groups"></div>
+        </div>
+
+        <footer class="modal__foot">
+          <button class="btn btn--primary" id="btn-close-leaderboard-2" type="button">
+            Fermer
           </button>
         </footer>
       </div>
