@@ -537,12 +537,14 @@ export class PlayerCreature extends StoryCreature {
   constructor(options) {
     super(options);
     this.nextDirection = null;
+    this.dashDirection = null;
     this.dashCooldownFor = 0;
   }
 
   reset() {
     super.reset();
     this.nextDirection = null;
+    this.dashDirection = null;
     this.dashCooldownFor = 0;
   }
 
@@ -561,6 +563,21 @@ export class PlayerCreature extends StoryCreature {
       return false;
     }
 
+    const direction = this.nextDirection ?? this.direction;
+    if (!direction) return false;
+
+    // Do not snap sideways if the player queues a turn halfway between tiles.
+    if (
+      this.direction &&
+      this.offset > 1e-6 &&
+      direction.name !== this.direction.name
+    ) {
+      return false;
+    }
+
+    this.dashDirection = direction;
+    if (!this.direction || this.offset <= 1e-6) this.direction = direction;
+    this.nextDirection = null;
     this.beginDash();
     return true;
   }
@@ -568,12 +585,22 @@ export class PlayerCreature extends StoryCreature {
   requestDirection(nameOrDirection) {
     const direction =
       typeof nameOrDirection === 'string' ? DIRECTIONS[nameOrDirection] : nameOrDirection;
-    if (direction) this.nextDirection = direction;
+    if (!direction) return;
+
+    // Steering away from the locked heading aborts the charge immediately.
+    if (
+      this.dashing &&
+      this.dashDirection &&
+      direction.name !== this.dashDirection.name
+    ) {
+      this.cancelDash();
+    }
+    this.nextDirection = direction;
   }
 
   chooseDirection() {
     if (this.dashing && this.profile.destroyWalls) {
-      this.dashInInputDirection();
+      this.dashInLockedDirection();
       return;
     }
 
@@ -584,14 +611,20 @@ export class PlayerCreature extends StoryCreature {
     }
   }
 
+  cancelDash() {
+    this.dashFor = 0;
+    this.speed = this.baseSpeed;
+    this.dashDirection = null;
+  }
+
   /**
-   * Keep the player's heading while dashing. The first interior wall in the
-   * way shatters and ends the dash, so the wall breaks instead of being
-   * phased through.
+   * The dash keeps one heading and shatters consecutive walls in that line.
+   * After four walls it stops at the next one instead of breaking through.
    */
-  dashInInputDirection() {
-    const direction = this.nextDirection ?? this.direction;
+  dashInLockedDirection() {
+    const direction = this.dashDirection;
     if (!direction) {
+      this.cancelDash();
       this.direction = null;
       return;
     }
@@ -604,17 +637,18 @@ export class PlayerCreature extends StoryCreature {
       col >= this.maze.columns - 1 ||
       row >= this.maze.rows - 1
     ) {
+      this.cancelDash();
       this.direction = null;
       return;
     }
 
     if (this.maze.tiles[row][col] === TILE.WALL) {
-      this.breakWall(col, row);
-      this.dashFor = 0;
-      this.speed = this.baseSpeed;
-      this.direction = null;
-      this.nextDirection = null;
-      return;
+      const maxWalls = this.profile.dashMaxWalls ?? 4;
+      if (this.wallsBrokenThisDash >= maxWalls || !this.breakWall(col, row)) {
+        this.cancelDash();
+        this.direction = null;
+        return;
+      }
     }
 
     this.direction = direction;

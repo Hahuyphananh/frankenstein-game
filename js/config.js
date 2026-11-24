@@ -18,13 +18,14 @@ export const CREATURE_RULES = Object.freeze({
   hitDistance: 0.7,
 });
 
-/** The player-controlled Creature: a short dash that shatters one wall. */
+/** The player-controlled Creature: a short straight dash through up to four walls. */
 export const PLAYER_CREATURE_PROFILE = Object.freeze({
   strategy: 'evade',
   dashCooldown: 5,
   dashDuration: 0.65,
   dashMultiplier: 2.2,
   destroyWalls: true,
+  dashMaxWalls: 4,
 });
 
 /** Victor always has a power active; duration is the default phase length. */
