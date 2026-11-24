@@ -1,29 +1,79 @@
 /**
- * Guarded persistence for player settings. Storage can be unavailable
- * (private mode, disabled cookies, quota), so every access is defensive.
+ * Guarded, offline persistence. Settings, the player's name and the three
+ * difficulty boards are stored in cookies; old localStorage data is read once
+ * and migrated so existing local records are not lost.
  */
 
 import {
   DEFAULT_SETTINGS,
   DIFFICULTY_ORDER,
-  LEADERBOARD_KEY,
+  LEADERBOARD_COOKIE_PREFIX,
   LEADERBOARD_LIMIT,
-  STORAGE_KEY,
+  LEGACY_LEADERBOARD_KEY,
+  LEGACY_SETTINGS_KEY,
+  PLAYER_NAME_COOKIE,
+  SETTINGS_COOKIE,
   isDifficulty,
+  sanitizePlayerName,
 } from './config.js';
 
-export function loadSettings() {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_SETTINGS };
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
+function cookieSuffix() {
+  const secure =
+    typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : '';
+  return `Max-Age=${COOKIE_MAX_AGE}; Path=/; SameSite=Lax${secure}`;
+}
+
+function readCookie(name) {
+  try {
+    if (typeof document === 'undefined' || typeof document.cookie !== 'string') return null;
+    const prefix = `${name}=`;
+    const part = document.cookie.split('; ').find((entry) => entry.startsWith(prefix));
+    return part ? decodeURIComponent(part.slice(prefix.length)) : null;
+  } catch (error) {
+    console.warn('[FRANKENSTEIN] Cookie could not be read.', error);
+    return null;
+  }
+}
+
+function writeCookie(name, value) {
+  try {
+    document.cookie = `${name}=${encodeURIComponent(value)}; ${cookieSuffix()}`;
+    return true;
+  } catch (error) {
+    console.warn('[FRANKENSTEIN] Cookie could not be saved.', error);
+    return false;
+  }
+}
+
+function readLegacyStorage(key) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function leaderboardCookie(difficulty) {
+  return `${LEADERBOARD_COOKIE_PREFIX}${difficulty}`;
+}
+
+export function loadSettings() {
+  const raw = readCookie(SETTINGS_COOKIE) ?? readLegacyStorage(LEGACY_SETTINGS_KEY);
+  if (!raw) return { ...DEFAULT_SETTINGS };
+
+  try {
     const parsed = JSON.parse(raw);
-    return {
+    const settings = {
       difficulty: isDifficulty(parsed?.difficulty)
         ? parsed.difficulty
         : DEFAULT_SETTINGS.difficulty,
       sound: typeof parsed?.sound === 'boolean' ? parsed.sound : DEFAULT_SETTINGS.sound,
     };
+    if (readCookie(SETTINGS_COOKIE) === null) saveSettings(settings);
+    return settings;
   } catch (error) {
     console.warn('[FRANKENSTEIN] Settings could not be read, using defaults.', error);
     return { ...DEFAULT_SETTINGS };
@@ -31,17 +81,26 @@ export function loadSettings() {
 }
 
 export function saveSettings(settings) {
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        difficulty: settings.difficulty,
-        sound: settings.sound,
-      }),
-    );
-  } catch (error) {
-    console.warn('[FRANKENSTEIN] Settings could not be saved.', error);
-  }
+  writeCookie(
+    SETTINGS_COOKIE,
+    JSON.stringify({
+      difficulty: settings.difficulty,
+      sound: settings.sound,
+    }),
+  );
+}
+
+/** Null means no name has been saved yet, so the game should ask before playing. */
+export function loadPlayerName() {
+  const raw = readCookie(PLAYER_NAME_COOKIE);
+  if (!raw) return null;
+  return sanitizePlayerName(raw);
+}
+
+export function savePlayerName(name) {
+  const safeName = sanitizePlayerName(name);
+  writeCookie(PLAYER_NAME_COOKIE, safeName);
+  return safeName;
 }
 
 function cleanText(value, maxLength = 80) {
@@ -60,6 +119,7 @@ export function normalizeLeaderboardEntry(entry) {
   return Object.freeze({
     difficulty: entry.difficulty,
     timeMs: Math.round(timeMs),
+    name: sanitizePlayerName(entry.name),
     characterId: cleanText(entry.characterId, 40),
     characterName: cleanText(entry.characterName, 80),
     mapId: cleanText(entry.mapId, 40),
@@ -120,24 +180,45 @@ export function insertLeaderboardRun(runs, run, limit = LEADERBOARD_LIMIT) {
 }
 
 export function loadLeaderboard() {
+  let foundCookie = false;
+  const entries = [];
+
+  for (const difficulty of DIFFICULTY_ORDER) {
+    const raw = readCookie(leaderboardCookie(difficulty));
+    if (raw === null) continue;
+    foundCookie = true;
+    if (!raw) continue;
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) entries.push(...parsed);
+    } catch (error) {
+      console.warn(`[FRANKENSTEIN] ${difficulty} records could not be read.`, error);
+    }
+  }
+
+  if (foundCookie) return normalizeLeaderboard(entries);
+
+  const legacy = readLegacyStorage(LEGACY_LEADERBOARD_KEY);
+  if (!legacy) return [];
+
   try {
-    const raw = window.localStorage.getItem(LEADERBOARD_KEY);
-    if (!raw) return [];
-    return normalizeLeaderboard(JSON.parse(raw));
+    const migrated = normalizeLeaderboard(JSON.parse(legacy));
+    saveLeaderboard(migrated);
+    return migrated;
   } catch (error) {
-    console.warn('[FRANKENSTEIN] Leaderboard could not be read.', error);
+    console.warn('[FRANKENSTEIN] Legacy leaderboard could not be migrated.', error);
     return [];
   }
 }
 
 export function saveLeaderboard(runs) {
-  try {
-    window.localStorage.setItem(
-      LEADERBOARD_KEY,
-      JSON.stringify(normalizeLeaderboard(runs)),
+  const normalized = normalizeLeaderboard(runs);
+  for (const difficulty of DIFFICULTY_ORDER) {
+    writeCookie(
+      leaderboardCookie(difficulty),
+      JSON.stringify(normalized.filter((entry) => entry.difficulty === difficulty)),
     );
-  } catch (error) {
-    console.warn('[FRANKENSTEIN] Leaderboard could not be saved.', error);
   }
 }
 
@@ -145,4 +226,12 @@ export function recordLeaderboardRun(run) {
   const result = insertLeaderboardRun(loadLeaderboard(), run);
   if (result.entry) saveLeaderboard(result.runs);
   return result;
+}
+
+/** Fastest stored time for one difficulty, used by the live HUD comparison. */
+export function fastestTimeForDifficulty(runs, difficulty) {
+  const entries = normalizeLeaderboard(runs).filter(
+    (entry) => entry.difficulty === difficulty,
+  );
+  return entries.length ? entries[0].timeMs : null;
 }

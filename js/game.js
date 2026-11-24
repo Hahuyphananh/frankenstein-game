@@ -1,5 +1,6 @@
 import {
   CREATURE_RULES,
+  DEFAULT_PLAYER_NAME,
   DIFFICULTIES,
   PLAYER_CREATURE_PROFILE,
   VICTOR_POWERS,
@@ -16,7 +17,13 @@ import {
 } from './maze.js';
 import { MenuView } from './menu.js';
 import { RunTimer } from './timer.js';
-import { loadLeaderboard, recordLeaderboardRun } from './storage.js';
+import {
+  fastestTimeForDifficulty,
+  loadLeaderboard,
+  loadPlayerName,
+  recordLeaderboardRun,
+  savePlayerName,
+} from './storage.js';
 import {
   PlayerCreature,
   STORY_RULES,
@@ -47,6 +54,8 @@ export class Game {
     this.lastStarts = null;
     this.warningPlayed = false;
     this.runTimer = new RunTimer();
+    this.playerName = loadPlayerName();
+    this.bestTimeMs = null;
     this.mapIndex = 0;
     this.currentMap = null;
 
@@ -61,6 +70,7 @@ export class Game {
       onInstructionsClosed: () => this.audio.play('close'),
       onLeaderboard: () => this.openLeaderboard(),
       onLeaderboardClosed: () => this.audio.play('close'),
+      onNameSubmit: (name) => this.submitPlayerName(name),
     });
 
     this.loop = new GameLoop({
@@ -82,7 +92,7 @@ export class Game {
     if (this.screen !== 'stage' || this.stageStatus !== 'playing') return;
     if (!this.player || !this.creature) return;
 
-    this.view.setRunTime(this.runTimer.elapsed());
+    this.view.setRunTime(this.runTimer.elapsed(), this.bestTimeMs);
     const creature = this.creature;
 
     // Victor hunts the Creature; the Creature responds to player input and
@@ -103,12 +113,31 @@ export class Game {
 
   play() {
     if (this.screen === 'stage') return;
+    if (!this.playerName) {
+      this.view.showNamePrompt();
+      this.audio.play('open');
+      return;
+    }
+    this.startGame();
+  }
 
+  startGame() {
     this.screen = 'stage';
     this.startRun();
     this.view.showScreen('stage');
     this.renderer.setScreen('stage');
     this.audio.play('confirm');
+  }
+
+  submitPlayerName(value) {
+    const raw = typeof value === 'string' ? value.trim() : '';
+    if (!raw) {
+      this.view.showNameError('Entrez un nom pour commencer.');
+      return;
+    }
+    this.playerName = savePlayerName(raw);
+    this.view.hideNamePrompt();
+    this.startGame();
   }
 
   /** Create a fresh run: next stable village, new actors, full dash charge. */
@@ -160,12 +189,18 @@ export class Game {
     this.renderer.setPlayer(this.player);
     this.renderer.setCreature(this.creature);
     this.renderer.setStory(this.story);
+    this.bestTimeMs = fastestTimeForDifficulty(loadLeaderboard(), difficulty.id);
     this.runTimer.start();
-    this.view.setRunTime(0);
+    this.view.setRunTime(0, this.bestTimeMs);
   }
 
   restart() {
     if (this.screen !== 'stage') return;
+    if (!this.playerName) {
+      this.backToMenu();
+      this.play();
+      return;
+    }
     this.startRun();
     this.audio.play('confirm');
   }
@@ -206,7 +241,7 @@ export class Game {
 
     this.stageStatus = 'paused';
     this.runTimer.pause();
-    this.view.setRunTime(this.runTimer.elapsed());
+    this.view.setRunTime(this.runTimer.elapsed(), this.bestTimeMs);
     this.freezeActors();
     this.view.showPause();
     this.audio.play('open');
@@ -233,7 +268,7 @@ export class Game {
     const won = outcome === 'won';
     this.stageStatus = won ? 'won' : 'lost';
     const timeMs = Math.max(10, Math.round(this.runTimer.stop() / 10) * 10);
-    this.view.setRunTime(timeMs);
+    this.view.setRunTime(timeMs, this.bestTimeMs);
     const story = this.story?.resolve(ending) ?? null;
 
     this.freezeActors();
@@ -245,7 +280,8 @@ export class Game {
     let record = null;
     if (won) {
       const character = this.story?.protectedCharacter;
-      record = recordLeaderboardRun({
+      const run = {
+        name: this.playerName ?? DEFAULT_PLAYER_NAME,
         difficulty: this.currentDifficulty.id,
         timeMs,
         characterId: character?.id ?? '',
@@ -253,7 +289,8 @@ export class Game {
         mapId: this.currentMap?.id ?? '',
         mapLabel: this.currentMap?.label ?? '',
         at: new Date().toISOString(),
-      });
+      };
+      record = recordLeaderboardRun(run);
     }
 
     this.lastResult = {

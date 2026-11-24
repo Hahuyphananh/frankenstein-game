@@ -52,9 +52,16 @@ export class MenuView {
     this.victorCycle = [...document.querySelectorAll('#stage-victor-cycle [data-power]')];
     this.timerElement = byId('stage-timer');
     this.timerValue = byId('stage-timer-value');
+    this.timerRecord = byId('stage-timer-record');
+    this.timerDelta = byId('stage-timer-delta');
     this.leaderboardButton = byId('btn-leaderboard');
     this.leaderboardDialog = byId('leaderboard-dialog');
     this.leaderboardGroups = byId('leaderboard-groups');
+    this.leaderboardSource = byId('leaderboard-source');
+    this.nameDialog = byId('name-dialog');
+    this.nameForm = byId('name-form');
+    this.nameInput = byId('player-name');
+    this.nameError = byId('name-error');
     this.powerKey = '';
     this.victorKey = '';
     this.runTimeKey = '';
@@ -80,6 +87,14 @@ export class MenuView {
     this.leaderboardButton.addEventListener('click', () => handlers.onLeaderboard?.());
     byId('btn-close-leaderboard').addEventListener('click', () => this.leaderboardDialog.close());
     byId('btn-close-leaderboard-2').addEventListener('click', () => this.leaderboardDialog.close());
+    this.nameForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      handlers.onNameSubmit?.(this.nameInput.value);
+    });
+    byId('btn-cancel-name').addEventListener('click', () => this.nameDialog.close());
+    this.nameDialog.addEventListener('click', (event) => {
+      if (event.target === this.nameDialog) this.nameDialog.close();
+    });
 
     this.radios.forEach((radio) => {
       radio.addEventListener('change', () => {
@@ -109,6 +124,24 @@ export class MenuView {
     this.setSound(settings.sound);
   }
 
+  showNamePrompt() {
+    this.nameInput.value = '';
+    this.nameError.textContent = '';
+    this.nameError.hidden = true;
+    if (!this.nameDialog.open) this.nameDialog.showModal();
+    window.requestAnimationFrame(() => this.nameInput.focus({ preventScroll: true }));
+  }
+
+  hideNamePrompt() {
+    if (this.nameDialog.open) this.nameDialog.close();
+  }
+
+  showNameError(message) {
+    this.nameError.textContent = message;
+    this.nameError.hidden = false;
+    this.nameInput.focus({ preventScroll: true });
+  }
+
   /** The stage objective, controls and power panels follow the level. */
   setStage(protectedCharacter = null, difficulty = null) {
     const protectedName = protectedCharacter?.name ?? 'la personne protégée';
@@ -132,12 +165,29 @@ export class MenuView {
     this.difficultyChip.dataset.level = difficulty.id;
   }
 
-  setRunTime(elapsedMs = 0) {
+  setRunTime(elapsedMs = 0, bestTimeMs = null) {
     const label = formatRunTime(elapsedMs);
-    if (label === this.runTimeKey) return;
-    this.runTimeKey = label;
+    const hasBest = Number.isFinite(bestTimeMs) && bestTimeMs > 0;
+    const bestLabel = hasBest ? formatRunTime(bestTimeMs) : '';
+    const deltaMs = hasBest ? elapsedMs - bestTimeMs : null;
+    const deltaLabel = hasBest
+      ? `${deltaMs <= 0 ? '-' : '+'}${formatRunTime(Math.abs(deltaMs))}`
+      : '';
+    const key = `${label}|${bestLabel}|${deltaLabel}`;
+    if (key === this.runTimeKey) return;
+    this.runTimeKey = key;
     this.timerValue.textContent = label;
-    this.timerElement.setAttribute('aria-label', `Temps de la partie : ${label}.`);
+    this.timerRecord.textContent = hasBest ? `Record ${bestLabel}` : 'Record —';
+    this.timerDelta.textContent = deltaLabel;
+    this.timerDelta.hidden = !hasBest;
+    this.timerDelta.classList.toggle('is-ahead', hasBest && deltaMs <= 0);
+    this.timerDelta.classList.toggle('is-behind', hasBest && deltaMs > 0);
+    this.timerElement.setAttribute(
+      'aria-label',
+      hasBest
+        ? `Temps de la partie : ${label}. Record : ${bestLabel}. Écart : ${deltaLabel}.`
+        : `Temps de la partie : ${label}. Aucun record enregistré.`,
+    );
   }
 
   setCreaturePower({ enabled = true, cooldown = 0, limit = 0, dashing = false } = {}) {
@@ -272,8 +322,8 @@ export class MenuView {
     this.resultRecord.hidden = !record?.entry;
     this.resultRecord.textContent = record?.entry
       ? record.isBest
-        ? 'Nouveau record local sur cette difficulté.'
-        : `${record.rank}e temps local sur cette difficulté.`
+        ? 'Nouveau record sur cette difficulté.'
+        : `${record.rank}e temps sur cette difficulté.`
       : '';
 
     this.playAgainButton.textContent = 'Recommencer';
@@ -283,6 +333,7 @@ export class MenuView {
 
   showLeaderboard(runs = []) {
     const safeRuns = Array.isArray(runs) ? runs : [];
+    this.leaderboardSource.textContent = 'Records enregistrés sur cet appareil.';
     this.leaderboardGroups.replaceChildren();
 
     for (const difficulty of DIFFICULTY_ORDER) {
@@ -321,8 +372,9 @@ export class MenuView {
           const meta = document.createElement('span');
           meta.className = 'leaderboard__meta';
           meta.textContent =
-            [entry.characterName, entry.mapLabel].filter(Boolean).join(' · ') ||
-            'Village';
+            [entry.name, entry.characterName, entry.mapLabel]
+              .filter(Boolean)
+              .join(' · ') || 'Anonyme';
           body.append(time, meta);
           item.append(rank, body);
           list.append(item);
@@ -369,6 +421,6 @@ export class MenuView {
   }
 
   isDialogOpen() {
-    return this.dialog.open || this.leaderboardDialog.open;
+    return this.dialog.open || this.leaderboardDialog.open || this.nameDialog.open;
   }
 }

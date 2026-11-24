@@ -4,14 +4,28 @@
  * Victor is an AI hunter whose speed and periodic surge are profile-driven.
  */
 
-export const STORAGE_KEY = 'frankenstein:settings:v1';
-export const LEADERBOARD_KEY = 'frankenstein:leaderboard:v1';
+export const SETTINGS_COOKIE = 'frankenstein_settings_v1';
+export const PLAYER_NAME_COOKIE = 'frankenstein_player_name_v1';
+export const LEADERBOARD_COOKIE_PREFIX = 'frankenstein_leaderboard_v1_';
+
+// Read once to migrate records saved by the previous localStorage version.
+export const LEGACY_SETTINGS_KEY = 'frankenstein:settings:v1';
+export const LEGACY_LEADERBOARD_KEY = 'frankenstein:leaderboard:v1';
+
 export const LEADERBOARD_LIMIT = 5;
+export const DEFAULT_PLAYER_NAME = 'Anonyme';
+export const PLAYER_NAME_MAX_LENGTH = 20;
 
 export const DEFAULT_SETTINGS = Object.freeze({
   difficulty: 'normal',
   sound: true,
 });
+
+/** Keep a submitted player name short and non-empty. */
+export function sanitizePlayerName(value) {
+  const name = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+  return name.slice(0, PLAYER_NAME_MAX_LENGTH) || DEFAULT_PLAYER_NAME;
+}
 
 /** A single touch from Victor ends the run. */
 export const CREATURE_RULES = Object.freeze({

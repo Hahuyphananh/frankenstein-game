@@ -160,6 +160,10 @@
               >
                 <span class="timer__label">Temps</span>
                 <span class="timer__value" id="stage-timer-value">0:00,0</span>
+                <span class="timer__compare">
+                  <span class="timer__record" id="stage-timer-record">Record —</span>
+                  <span class="timer__delta" id="stage-timer-delta" hidden></span>
+                </span>
               </div>
               <span class="chip" id="stage-difficulty" data-level="normal">npc</span>
               <button
@@ -383,9 +387,10 @@
             <h3>Chronomètre et records</h3>
             <p>
               Le chronomètre démarre au début de chaque course et se met en pause avec le jeu.
-              Il s’arrête dès que la Créature atteint la personne protégée. Les cinq meilleurs
-              temps de chaque difficulté sont conservés sur cet appareil et consultables via
-              le bouton Records du menu.
+              Il s’arrête dès que la Créature atteint la personne protégée. Le HUD compare votre
+              temps au meilleur temps connu de la difficulté. Les cinq meilleurs temps de chaque
+              difficulté sont conservés dans un cookie sur cet appareil et consultables via le
+              bouton Records du menu.
             </p>
           </section>
 
@@ -441,6 +446,9 @@
         </header>
 
         <div class="modal__body">
+          <p class="leaderboard__source" id="leaderboard-source">
+            Records enregistrés sur cet appareil.
+          </p>
           <p class="leaderboard__intro" id="leaderboard-intro">
             Les courses gagnées les plus rapides, par difficulté. Les temps sont enregistrés
             sur cet appareil.
@@ -454,6 +462,44 @@
           </button>
         </footer>
       </div>
+    </dialog>
+
+    <dialog
+      class="modal modal--name"
+      id="name-dialog"
+      aria-labelledby="name-title"
+      aria-describedby="name-copy name-error"
+    >
+      <form class="modal__inner" id="name-form">
+        <header class="modal__head">
+          <p class="label">Avant de jouer</p>
+          <h2 class="modal__title" id="name-title">Votre nom</h2>
+        </header>
+
+        <div class="modal__body">
+          <p id="name-copy" class="name-prompt__copy">
+            Il servira à signer vos records. Il restera sur cet appareil.
+          </p>
+          <label class="name-field" for="player-name">
+            <span class="name-field__label">Nom du joueur</span>
+            <input
+              class="name-field__input"
+              id="player-name"
+              type="text"
+              maxlength="20"
+              autocomplete="nickname"
+              placeholder="Votre nom"
+              required
+            />
+          </label>
+          <p class="name-field__error" id="name-error" hidden></p>
+        </div>
+
+        <footer class="modal__foot">
+          <button class="btn btn--ghost" id="btn-cancel-name" type="button">Annuler</button>
+          <button class="btn btn--primary" type="submit">Jouer</button>
+        </footer>
+      </form>
     </dialog>
 
     <noscript>
