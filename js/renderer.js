@@ -1,4 +1,5 @@
 import { Camera } from './camera.js';
+import { VICTOR_POWERS } from './config.js';
 import { TILE } from './maze.js';
 import {
   drawCreature,
@@ -549,6 +550,8 @@ export class StageRenderer {
     const frame = this.player.moving ? Math.floor(this.time * 9) % 2 : 0;
 
     const misty = Boolean(this.player.misty);
+    const activePower = this.player.activePower ?? 'rage';
+    const powerRgb = VICTOR_POWERS[activePower]?.rgb ?? '255, 92, 122';
 
     // A thin red ring charges around Victor during the wind-up, so the cue is
     // visible on the board and not only in the HUD.
@@ -563,8 +566,7 @@ export class StageRenderer {
       this.ctx.restore();
     }
 
-    // Victor's rage is telegraphed with a red pulse; Brume replaces it with a
-    // pale mist that makes him spectral for the duration of the surge.
+    // Each power gets its own aura; Brume additionally turns Victor spectral.
     if (this.player.surging) {
       const pulse = this.animate ? 0.5 + 0.5 * Math.sin(this.time * 8) : 0.8;
       const radius = this.camera.cell * (0.9 + pulse * 0.3);
@@ -576,13 +578,9 @@ export class StageRenderer {
         point.y,
         radius,
       );
-      glow.addColorStop(
-        0,
-        misty
-          ? `rgba(190, 214, 211, ${0.2 + pulse * 0.1})`
-          : `rgba(216, 51, 79, ${0.28 + pulse * 0.14})`,
-      );
-      glow.addColorStop(1, misty ? 'rgba(190, 214, 211, 0)' : 'rgba(216, 51, 79, 0)');
+      const auraAlpha = misty ? 0.2 + pulse * 0.1 : 0.28 + pulse * 0.14;
+      glow.addColorStop(0, `rgba(${powerRgb}, ${auraAlpha})`);
+      glow.addColorStop(1, `rgba(${powerRgb}, 0)`);
       this.ctx.save();
       this.ctx.globalCompositeOperation = 'lighter';
       this.ctx.fillStyle = glow;
@@ -590,6 +588,58 @@ export class StageRenderer {
       this.ctx.arc(point.x, point.y, radius, 0, TAU);
       this.ctx.fill();
       this.ctx.restore();
+    }
+
+    // Rage leaves a hot pink wake of afterimages and speed lines behind him.
+    if (activePower === 'rage') {
+      const drift = {
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 },
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 },
+      }[direction] ?? { x: 0, y: 1 };
+      const cell = this.camera.cell;
+      const ctx = this.ctx;
+      const phase = this.animate ? (this.time * 2.6) % 1 : 0.55;
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (const [back, alpha] of [
+        [cell * 0.24, 0.16],
+        [cell * 0.43, 0.09],
+      ]) {
+        ctx.globalAlpha = alpha;
+        drawVictor(ctx, {
+          x: point.x - drift.x * back,
+          y: point.y - drift.y * back,
+          cell,
+          direction,
+          frame,
+        });
+      }
+
+      ctx.globalAlpha = 0.72;
+      ctx.strokeStyle = `rgba(${powerRgb}, 0.72)`;
+      ctx.lineWidth = Math.max(1, cell * 0.045);
+      ctx.lineCap = 'round';
+      const perpX = -drift.y;
+      const perpY = drift.x;
+      for (let line = 0; line < 3; line += 1) {
+        const offset = (line - 1) * cell * 0.17;
+        const start = cell * (0.34 + phase * 0.34 + line * 0.06);
+        const length = cell * (0.3 - line * 0.05);
+        ctx.beginPath();
+        ctx.moveTo(
+          point.x - drift.x * start + perpX * offset,
+          point.y - drift.y * start + perpY * offset,
+        );
+        ctx.lineTo(
+          point.x - drift.x * (start + length) + perpX * offset,
+          point.y - drift.y * (start + length) + perpY * offset,
+        );
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     this.ctx.save();

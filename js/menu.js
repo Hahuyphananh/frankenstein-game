@@ -94,13 +94,12 @@ export class MenuView {
   /** The stage objective, controls and power panels follow the level. */
   setStage(protectedCharacter = null, difficulty = null) {
     const protectedName = protectedCharacter?.name ?? 'la personne protégée';
-    const recharge = difficulty?.victorPowerInterval ?? 6;
-    const surge = difficulty?.victorPowerDuration ?? 3;
+    const phase = difficulty?.victorPowerDuration ?? 3.5;
     const fr = (value) => String(value).replace('.', ',');
 
     this.hudLabel.textContent = 'Frankenstein · nuit';
     this.hudTitle.textContent = `Atteindre ${protectedName}`;
-    this.hudObjective.textContent = `Vous êtes la Créature. Rejoignez ${protectedName} sans être touché par Victor, qui recharge ${fr(recharge)} secondes puis bondit ${fr(surge)} secondes.`;
+    this.hudObjective.textContent = `Vous êtes la Créature. Rejoignez ${protectedName} sans être touché par Victor, qui change de pouvoir toutes les ${fr(phase)} secondes, sans pause.`;
     this.pauseCopy.textContent = `La partie est en pause. ${protectedName} vous attend dans les ruelles.`;
     this.stageMoveHint.innerHTML =
       '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ou les flèches pour déplacer la Créature</span><span class="stage-bar__keys"><kbd>Espace</kbd></span><span>ruée</span>';
@@ -169,6 +168,10 @@ export class MenuView {
     if (key === this.victorKey) return;
     this.victorKey = key;
 
+    const colorPower = surging ? power : next;
+    this.victorElement.style.setProperty('--victor-color', colorPower?.color ?? '#ff5c7a');
+    this.victorElement.style.setProperty('--victor-soft', colorPower?.soft ?? 'rgba(255, 92, 122, 0.1)');
+    this.victorElement.dataset.power = colorPower?.id ?? 'rage';
     this.victorValue.textContent = value;
     this.victorFill.style.width = `${Math.round(progress * 100)}%`;
     this.victorElement.classList.toggle('is-active', surging);

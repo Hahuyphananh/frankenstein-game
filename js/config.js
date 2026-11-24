@@ -27,42 +27,46 @@ export const PLAYER_CREATURE_PROFILE = Object.freeze({
   destroyWalls: true,
 });
 
-/** Victor recharges for six seconds, then surges for three. */
+/** Victor always has a power active; duration is the default phase length. */
 export const VICTOR_POWER = Object.freeze({
-  interval: 6,
-  duration: 3,
-  /** Seconds of HUD pulse and audible cue before the surge lands. */
-  windup: 1.5,
+  duration: 3.5,
 });
 
 /**
- * Each surge reaches top speed and manifests one of Victor's powers, each
- * drawn from the novel. The plain Rage surge comes first so the chase is
- * learned before the tricks arrive.
+ * Victor is permanently under one of these powers and switches to the next
+ * when its phase ends. Each power has its own HUD and board colour.
  */
 export const VICTOR_POWERS = Object.freeze({
   rage: Object.freeze({
     id: 'rage',
     label: 'Rage',
-    warning: 'Rage imminente',
-    note: 'sa rage vengeresse le lance à pleine vitesse sur vos traces',
+    color: '#ff5c7a',
+    soft: 'rgba(255, 92, 122, 0.1)',
+    rgb: '255, 92, 122',
+    note: 'sa rage vengeresse accélère encore sa course sur vos traces',
   }),
   eclair: Object.freeze({
     id: 'eclair',
     label: 'Éclair',
-    warning: 'Éclair imminent',
+    color: '#7fd7ff',
+    soft: 'rgba(127, 215, 255, 0.1)',
+    rgb: '127, 215, 255',
     note: 'l’étincelle de vie le téléporte de quelques cases vers vous',
   }),
   brume: Object.freeze({
     id: 'brume',
     label: 'Brume',
-    warning: 'Brume imminente',
+    color: '#b8d8c8',
+    soft: 'rgba(184, 216, 200, 0.1)',
+    rgb: '184, 216, 200',
     note: 'la brume le rend spectral et difficile à suivre',
   }),
   pacte: Object.freeze({
     id: 'pacte',
     label: 'Serment',
-    warning: 'Serment imminent',
+    color: '#ffd166',
+    soft: 'rgba(255, 209, 102, 0.12)',
+    rgb: '255, 209, 102',
     note: 'son serment le pousse à monter la garde près de la personne protégée',
   }),
 });
@@ -70,11 +74,12 @@ export const VICTOR_POWERS = Object.freeze({
 export const VICTOR_POWER_CYCLE = Object.freeze(['rage', 'eclair', 'brume', 'pacte']);
 
 /**
- * Per-power adjustments. The faster recharge keeps Victor busy, but each
- * manifestation is milder: Éclair lands farther away and the Brume/Serment
- * surges move below a full rage.
+ * Per-power movement adjustments. Rage boosts Victor beyond his surge speed;
+ * Éclair returns to the normal hunt after its blink, while Brume and Serment
+ * move slower during their phases.
  */
 export const VICTOR_POWER_EFFECTS = Object.freeze({
+  rage: Object.freeze({ speedScale: 1.15 }),
   eclair: Object.freeze({ blinkSteps: 3, blinkStop: 3 }),
   brume: Object.freeze({ speedScale: 0.85 }),
   pacte: Object.freeze({ speedScale: 0.9 }),
@@ -86,12 +91,10 @@ export const DIFFICULTIES = Object.freeze({
     label: 'ez',
     creatureSpeed: 5.2,
     elizabethSpeed: 2.8,
-    victorSpeed: 3.4,
+    victorSpeed: 3.2,
     victorSurgeSpeed: 4.6,
-    victorPowerInterval: 8,
-    victorPowerDuration: 2,
-    victorPowerWindup: 2.2,
-    hint: 'ez : Victor traque lentement, recharge 8 secondes, prévient 2,2 secondes à l’avance et bondit 2 secondes. La ruée de la Créature revient toutes les 5 secondes.',
+    victorPowerDuration: 4.5,
+    hint: 'ez : Victor traque lentement et garde chaque pouvoir 4,5 secondes ; sa Rage le rend plus rapide. La ruée de la Créature revient toutes les 5 secondes.',
   }),
   normal: Object.freeze({
     id: 'normal',
@@ -100,22 +103,18 @@ export const DIFFICULTIES = Object.freeze({
     elizabethSpeed: 3.5,
     victorSpeed: 4.6,
     victorSurgeSpeed: 6,
-    victorPowerInterval: 6,
-    victorPowerDuration: 3,
-    victorPowerWindup: 1.5,
-    hint: 'npc : Victor recharge 6 secondes, prévient 1,5 seconde à l’avance et bondit 3 secondes. La ruée de la Créature revient toutes les 5 secondes.',
+    victorPowerDuration: 3.5,
+    hint: 'npc : Victor garde chaque pouvoir 3,5 secondes ; sa Rage le rend plus rapide. La ruée de la Créature revient toutes les 5 secondes.',
   }),
   hard: Object.freeze({
     id: 'hard',
     label: 'harr',
     creatureSpeed: 5.2,
     elizabethSpeed: 4,
-    victorSpeed: 5.2,
-    victorSurgeSpeed: 7.4,
-    victorPowerInterval: 4.5,
-    victorPowerDuration: 3.5,
-    victorPowerWindup: 0.9,
-    hint: 'harr : Victor recharge 4,5 secondes, prévient seulement 0,9 seconde et bondit 3,5 secondes. La ruée de la Créature revient toutes les 5 secondes.',
+    victorSpeed: 5.0,
+    victorSurgeSpeed: 7.0,
+    victorPowerDuration: 2.5,
+    hint: 'harr : Victor change de pouvoir toutes les 2,5 secondes ; sa Rage le rend plus rapide. La ruée de la Créature revient toutes les 5 secondes.',
   }),
 });
 

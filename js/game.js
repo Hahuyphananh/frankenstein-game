@@ -2,7 +2,6 @@ import {
   CREATURE_RULES,
   DIFFICULTIES,
   PLAYER_CREATURE_PROFILE,
-  VICTOR_POWER,
   VICTOR_POWERS,
   isDifficulty,
 } from './config.js';
@@ -123,11 +122,7 @@ export class Game {
       spawn: starts.victor,
       speed: difficulty.victorSpeed,
       surgeSpeed: difficulty.victorSurgeSpeed,
-      power: {
-        interval: difficulty.victorPowerInterval ?? VICTOR_POWER.interval,
-        duration: difficulty.victorPowerDuration ?? VICTOR_POWER.duration,
-        windup: difficulty.victorPowerWindup ?? VICTOR_POWER.windup,
-      },
+      power: { duration: difficulty.victorPowerDuration },
       onBlink: (from, to) => this.renderer.blinkEffect(from, to),
     });
     this.creature = new PlayerCreature({
@@ -173,19 +168,10 @@ export class Game {
     });
   }
 
-  /** Keep Victor's rage countdown visible, since it is the main threat. */
+  /** Keep Victor's active power and its remaining phase visible. */
   syncVictorPower() {
     const victor = this.player;
     if (!victor) return;
-
-    // A single alarm sounds when the wind-up begins; the HUD keeps pulsing
-    // until the surge actually fires.
-    if (victor.warning && !this.warningPlayed) {
-      this.warningPlayed = true;
-      this.audio.play('alarm');
-    } else if (!victor.warning) {
-      this.warningPlayed = false;
-    }
 
     this.view.setVictorPower({
       warning: victor.warning,

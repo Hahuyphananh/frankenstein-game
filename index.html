@@ -111,16 +111,16 @@
                 id="stage-victor"
                 role="status"
                 aria-live="off"
-                aria-label="Pouvoir de Victor : prêt dans 6 secondes."
+                aria-label="Pouvoir de Victor : Rage actif."
               >
                 <span class="power__head">
                   <span class="power__label">Victor</span>
-                  <span class="power__value" id="stage-victor-value">6 s</span>
+                  <span class="power__value" id="stage-victor-value">Rage</span>
                 </span>
                 <span class="power__track" aria-hidden="true">
                   <i class="power__fill" id="stage-victor-fill"></i>
                 </span>
-                <span class="power__next" id="stage-victor-next">Suivant : Rage</span>
+                <span class="power__next" id="stage-victor-next">Suivant : Éclair</span>
                 <span class="power__cycle" id="stage-victor-cycle" aria-hidden="true">
                   <span data-power="rage">Rage</span>
                   <span data-power="eclair">Éclair</span>
@@ -240,8 +240,8 @@
               Vous êtes la Créature, échappée dans un village victorien. Votre but : rejoindre
               la personne protégée, choisie au hasard entre Elizabeth, Henri Clerval et William
               Frankenstein, avant que Victor ne vous touche.              Victor est contrôlé par
-              l’intelligence du jeu : il suit votre trace et, après un temps de recharge,
-              déclenche pendant quelques secondes l’un de ses pouvoirs. Une seule touche de
+              l’intelligence du jeu : il suit votre trace et garde en permanence l’un de ses
+              quatre pouvoirs ; il change toutes les quelques secondes. Une seule touche de
               Victor met fin à la partie. Appuyez sur Espace pour déclencher la ruée de la Créature :
               elle dure 0,65 seconde, multiplie sa vitesse par 2,2, brise le premier mur
               qu’elle heurte et se recharge en 5 secondes. Le village est reconstruit à chaque
@@ -254,10 +254,9 @@
             <p>
               Une partie se joue en solo. Vous dirigez la Créature avec WASD ou les flèches et
               déclenchez la ruée avec Espace. Victor, piloté par l’ordinateur, est un peu plus
-              lent que vous au repos : profitez des boucles du village pour le semer. Après
-              sa recharge, sa jauge se vide et il libère pendant quelques secondes l’un de
-              ses quatre pouvoirs. Juste avant, sa jauge clignote
-              en rouge, un signal sonore retentit et un anneau se charge autour de lui ; une
+              lent que vous au repos : profitez des boucles du village pour le semer. Victor
+              est toujours sous l’un de ses quatre pouvoirs et change toutes les quelques
+              secondes, sans pause. Sa jauge montre le pouvoir en cours et le suivant ; une
               ruée bien placée ou un virage dans une ruelle peut encore le faire passer à
               côté. Atteignez la personne protégée pour gagner.
             </p>
@@ -266,13 +265,14 @@
           <section>
             <h3>Les pouvoirs de Victor</h3>
             <p>
-              À chaque recharge, Victor libère l’un de ses quatre pouvoirs, toujours dans le
-              même ordre : Rage, Éclair, Brume, Serment. Chacun répond à un motif du roman.
-              Le HUD affiche les quatre pouvoirs et met en avant le prochain.
+              Victor est toujours sous l’un de ses quatre pouvoirs, toujours dans le même
+              ordre : Rage, Éclair, Brume, Serment. Chacun répond à un motif du roman. Le HUD
+              affiche le pouvoir actif, le suivant et les quatre couleurs.
             </p>
             <p>
-              <strong>Rage</strong> — sa « rage insensée » contre sa propre créature : il vous
-              traque à pleine vitesse, comme il poursuit le monstre jusqu’aux glaces.
+              <strong>Rage</strong> — sa « rage insensée » contre sa propre créature : il accélère
+              encore, comme il poursuit le monstre jusqu’aux glaces, et laisse un sillage rose
+              derrière lui.
             </p>
             <p>
               <strong>Éclair</strong> — l’étincelle de vie qu’il découvre en étudiant la foudre :
@@ -285,7 +285,7 @@
             <p>
               <strong>Serment</strong> — la promesse faite à Elizabeth et à sa famille : il
               abandonne la traque pour monter la garde auprès de la personne protégée pendant
-              son assaut.
+              toute la phase de Serment.
             </p>
           </section>
 
@@ -356,21 +356,22 @@
             <h3>Difficulté</h3>
             <p>
               Une seule touche de Victor met fin à la partie : apprenez à lire la jauge de sa
-              rage. ez laisse Victor à 3,4 cases/s hors pouvoir et 4,6 pendant un pouvoir,
-              npc à 4,6 et 6,0, harr à 5,2 et 7,4. La Créature se déplace à 5,2 cases/s dans
-              toutes les difficultés. Sa ruée dure 0,65 seconde à 2,2 fois la vitesse, brise
-              le premier mur qu’elle heurte et se recharge en 5 secondes. Victor recharge
-              8, 6 et 4,5 secondes, prévient 2,2, 1,5 et 0,9 seconde, et bondit 2, 3 et
-              3,5 secondes. La personne protégée avance à 2,8, 3,5 et 4,0 cases/s selon la
-              difficulté, erre dans les rues et fuit lorsque la Créature approche.
+              rage. ez laisse Victor à 3,2 cases/s en traque et 5,3 pendant Rage, npc à 4,6
+              et 6,9, harr à 5,0 et 8,1. La Créature se déplace à 5,2 cases/s dans toutes les
+              difficultés. Sa ruée dure 0,65 seconde à 2,2 fois la vitesse, brise le premier
+              mur qu’elle heurte et se recharge en 5 secondes. Victor garde chaque pouvoir
+              4,5, 3,5 et 2,5 secondes ; la Rage ajoute 15 % à sa vitesse d’assaut et laisse
+              un sillage rose, tandis que Brume et Serment le ralentissent un peu. La personne
+              protégée avance à 2,8, 3,5 et 4,0 cases/s selon la difficulté, erre dans les rues
+              et fuit lorsque la Créature approche.
             </p>
           </section>
 
           <p class="modal__note">
             Version actuelle : un village victorien régénéré à chaque partie, avec plusieurs
             entrées et des ruelles en boucle, une personne protégée mobile choisie au hasard,
-            la ruée de la Créature et la rage périodique de Victor. Il n’y a pas encore de
-            progression entre les niveaux.
+            la ruée de la Créature et les pouvoirs permanents de Victor. Il n’y a pas encore
+            de progression entre les niveaux.
           </p>
         </div>
 

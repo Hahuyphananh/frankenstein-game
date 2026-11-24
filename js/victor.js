@@ -18,16 +18,13 @@ const OPPOSITE = Object.freeze({
  * Victor Frankenstein, now entirely AI-controlled.
  *
  * He follows the shortest route to the Creature's current tile at a slightly
- * lower speed than the player. After a short recharge he surges for three
- * seconds, and each surge also manifests one of his four powers:
+ * lower speed than the player. He is always under exactly one of his four
+ * powers and switches to the next when the current phase expires:
  *
- *   rage    pure pursuit ("maddening rage")
+ *   rage    pure pursuit at top speed ("maddening rage")
  *   eclair  blinks several tiles toward the Creature (the spark of life)
  *   brume   turns spectral while hunting (the mists where the Creature appears)
  *   pacte   runs to guard the protected person (his vow to Elizabeth)
- *
- * The surge is telegraphed by the HUD, so the player can dash or break line of
- * sight before it lands.
  */
 export class VictorHunter extends GridActor {
   constructor({
@@ -60,14 +57,17 @@ export class VictorHunter extends GridActor {
     super.reset();
     this.goalKey = null;
     this.goalField = null;
-    this.surgeFor = 0;
-    this.powerCooldownFor = this.powerInterval;
-    this.powerIndex = 0;
-    this.activePower = 'rage';
-    this.guarding = false;
+    // GridActor's constructor calls reset() before Victor's own fields are
+    // assigned, so every read here must tolerate the first, incomplete pass.
+    this.surgeFor = this.powerDuration ?? 0;
+    this.powerCooldownFor = 0;
+    this.powerIndex = 1;
+    this.activePower = this.powerCycle?.[0] ?? 'rage';
+    this.guarding = this.activePower === 'pacte';
     this.blinks = 0;
-    this.powerSpeedScale = 1;
-    this.speed = this.huntSpeed;
+    const effect = this.powerEffects?.[this.activePower] ?? {};
+    this.powerSpeedScale = effect.speedScale ?? 1;
+    if (this.huntSpeed !== undefined) this.speed = this.speedForPower();
   }
 
   get surging() {
@@ -79,50 +79,48 @@ export class VictorHunter extends GridActor {
   }
 
   get powerCooldown() {
-    return this.powerCooldownFor;
+    return 0;
   }
 
-  /** True during the short cue that precedes every surge. */
+  /** There is no idle window any more; a power is always active. */
   get warning() {
-    return !this.surging && this.powerCooldownFor <= this.windupFor;
+    return false;
   }
 
-  /** The power that will fire when the countdown reaches zero. */
+  /** The power that takes over when the current phase ends. */
   get nextPower() {
     return this.powerCycle[this.powerIndex % this.powerCycle.length] ?? 'rage';
   }
 
-  /** Spectral appearance used by the renderer during the Brume surge. */
+  /** Spectral appearance used by the renderer during the Brume phase. */
   get misty() {
-    return this.surging && this.activePower === 'brume';
+    return this.activePower === 'brume';
   }
 
   update(dt, context) {
     if (!Number.isFinite(dt) || dt <= 0) return;
 
-    if (this.surging) {
-      this.surgeFor = Math.max(0, this.surgeFor - dt);
-      if (this.surgeFor === 0) {
-        this.guarding = false;
-        this.powerCooldownFor = this.powerInterval;
-      }
-    } else {
-      this.powerCooldownFor = Math.max(0, this.powerCooldownFor - dt);
-      if (this.powerCooldownFor === 0) this.beginSurge(context);
-    }
-    this.speed = this.surging ? this.surgeSpeed * this.powerSpeedScale : this.huntSpeed;
+    this.surgeFor = Math.max(0, this.surgeFor - dt);
+    if (this.surgeFor === 0) this.advancePower(context);
+    this.speed = this.speedForPower();
 
     super.update(dt, context);
   }
 
-  beginSurge(context) {
-    this.surgeFor = this.powerDuration;
+  /** Rage is the only power that pushes Victor past his surge speed. */
+  speedForPower() {
+    if (this.activePower === 'rage') return this.surgeSpeed * this.powerSpeedScale;
+    return this.huntSpeed * this.powerSpeedScale;
+  }
+
+  advancePower(context) {
     this.activePower = this.nextPower;
     this.powerIndex += 1;
     this.guarding = this.activePower === 'pacte';
 
     const effect = this.powerEffects[this.activePower] ?? {};
     this.powerSpeedScale = effect.speedScale ?? 1;
+    this.surgeFor = this.powerDuration;
 
     if (this.activePower === 'eclair' && context?.goal) {
       this.blinkToward(
@@ -150,8 +148,8 @@ export class VictorHunter extends GridActor {
 
     const field = this.fieldFor(target);
 
-    // The Oath surge ends with Victor standing guard beside the protected
-    // person instead of following the Creature.
+    // The Oath phase is spent standing guard beside the protected person
+    // instead of following the Creature.
     if (this.guarding && fieldDistance(field, this.maze, this.col, this.row) <= 1) {
       this.direction = null;
       return;
@@ -169,9 +167,8 @@ export class VictorHunter extends GridActor {
       );
       if (distance < 0) continue;
 
-      // Outside the surge his tracking is a little loose; while surging he
-      // commits to the shortest route without hesitation.
-      const score = distance + (this.surging ? 0 : this.rng() * 0.35);
+      // Victor always commits to the shortest route without hesitation.
+      const score = distance;
       if (score < best) {
         best = score;
         bestDirections.length = 0;
