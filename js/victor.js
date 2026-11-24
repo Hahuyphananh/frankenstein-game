@@ -1,5 +1,9 @@
 import { GridActor } from './actor.js';
-import { VICTOR_POWER, VICTOR_POWER_CYCLE } from './config.js';
+import {
+  VICTOR_POWER,
+  VICTOR_POWER_CYCLE,
+  VICTOR_POWER_EFFECTS,
+} from './config.js';
 import { DIRECTIONS, walkableNeighbors } from './maze.js';
 import { buildDistanceField, fieldDistance } from './pathing.js';
 
@@ -14,8 +18,8 @@ const OPPOSITE = Object.freeze({
  * Victor Frankenstein, now entirely AI-controlled.
  *
  * He follows the shortest route to the Creature's current tile at a slightly
- * lower speed than the player. Every 10 seconds he surges for 5 seconds at
- * top speed, and each surge also manifests one of his four powers:
+ * lower speed than the player. After a short recharge he surges for three
+ * seconds, and each surge also manifests one of his four powers:
  *
  *   rage    pure pursuit ("maddening rage")
  *   eclair  blinks several tiles toward the Creature (the spark of life)
@@ -33,6 +37,7 @@ export class VictorHunter extends GridActor {
     surgeSpeed,
     power = VICTOR_POWER,
     powerCycle = VICTOR_POWER_CYCLE,
+    powerEffects = VICTOR_POWER_EFFECTS,
     onBlink = null,
     rng = Math.random,
   }) {
@@ -43,6 +48,7 @@ export class VictorHunter extends GridActor {
     this.powerDuration = power.duration;
     this.windupFor = power.windup ?? 1.5;
     this.powerCycle = powerCycle.length ? powerCycle : ['rage'];
+    this.powerEffects = powerEffects;
     this.onBlink = onBlink;
     this.rng = rng;
     this.goalKey = null;
@@ -60,6 +66,7 @@ export class VictorHunter extends GridActor {
     this.activePower = 'rage';
     this.guarding = false;
     this.blinks = 0;
+    this.powerSpeedScale = 1;
     this.speed = this.huntSpeed;
   }
 
@@ -103,7 +110,7 @@ export class VictorHunter extends GridActor {
       this.powerCooldownFor = Math.max(0, this.powerCooldownFor - dt);
       if (this.powerCooldownFor === 0) this.beginSurge(context);
     }
-    this.speed = this.surging ? this.surgeSpeed : this.huntSpeed;
+    this.speed = this.surging ? this.surgeSpeed * this.powerSpeedScale : this.huntSpeed;
 
     super.update(dt, context);
   }
@@ -114,8 +121,15 @@ export class VictorHunter extends GridActor {
     this.powerIndex += 1;
     this.guarding = this.activePower === 'pacte';
 
+    const effect = this.powerEffects[this.activePower] ?? {};
+    this.powerSpeedScale = effect.speedScale ?? 1;
+
     if (this.activePower === 'eclair' && context?.goal) {
-      this.blinkToward(context.goal, 4);
+      this.blinkToward(
+        context.goal,
+        effect.blinkSteps ?? 3,
+        effect.blinkStop ?? 3,
+      );
     }
   }
 
@@ -191,9 +205,9 @@ export class VictorHunter extends GridActor {
 
   /**
    * Follow the shortest walkable route toward the target for a few tiles,
-   * stopping two tiles short so the surge never teleports into contact.
+   * stopping several tiles short so the surge never teleports into contact.
    */
-  blinkToward(goal, maxSteps = 4) {
+  blinkToward(goal, maxSteps = 3, stopDistance = 3) {
     const field = buildDistanceField(this.maze, goal);
     let col = this.col;
     let row = this.row;
@@ -210,7 +224,7 @@ export class VictorHunter extends GridActor {
         }
       }
 
-      if (!best || best.distance <= 2) break;
+      if (!best || best.distance <= stopDistance) break;
       col = best.col;
       row = best.row;
     }

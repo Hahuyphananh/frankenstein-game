@@ -18,19 +18,19 @@ export const CREATURE_RULES = Object.freeze({
   hitDistance: 0.7,
 });
 
-/** The player-controlled Creature: manual dash, no wall breaking. */
+/** The player-controlled Creature: manual dash that smashes through walls. */
 export const PLAYER_CREATURE_PROFILE = Object.freeze({
   strategy: 'evade',
-  dashCooldown: 2,
-  dashDuration: 1.2,
-  dashMultiplier: 3,
-  destroyWalls: false,
+  dashCooldown: 5,
+  dashDuration: 1.1,
+  dashMultiplier: 2.8,
+  destroyWalls: true,
 });
 
-/** Victor surges for five seconds every ten seconds. */
+/** Victor recharges for six seconds, then surges for three. */
 export const VICTOR_POWER = Object.freeze({
-  interval: 10,
-  duration: 5,
+  interval: 6,
+  duration: 3,
   /** Seconds of HUD pulse and audible cue before the surge lands. */
   windup: 1.5,
 });
@@ -65,6 +65,17 @@ export const VICTOR_POWERS = Object.freeze({
 
 export const VICTOR_POWER_CYCLE = Object.freeze(['rage', 'eclair', 'brume', 'pacte']);
 
+/**
+ * Per-power adjustments. The faster recharge keeps Victor busy, but each
+ * manifestation is milder: Éclair lands farther away and the Brume/Serment
+ * surges move below a full rage.
+ */
+export const VICTOR_POWER_EFFECTS = Object.freeze({
+  eclair: Object.freeze({ blinkSteps: 3, blinkStop: 3 }),
+  brume: Object.freeze({ speedScale: 0.85 }),
+  pacte: Object.freeze({ speedScale: 0.9 }),
+});
+
 export const DIFFICULTIES = Object.freeze({
   easy: Object.freeze({
     id: 'easy',
@@ -72,8 +83,8 @@ export const DIFFICULTIES = Object.freeze({
     creatureSpeed: 5.2,
     elizabethSpeed: 3,
     victorSpeed: 3.8,
-    victorSurgeSpeed: 5.7,
-    hint: 'La chasse est courte et Victor traque lentement. Il libère un pouvoir 5 secondes toutes les 10 secondes ; la ruée de la Créature revient toutes les 2 secondes.',
+    victorSurgeSpeed: 5,
+    hint: 'La chasse est courte et Victor traque lentement. Il recharge 6 secondes puis libère un pouvoir 3 secondes ; la ruée de la Créature revient toutes les 5 secondes.',
   }),
   normal: Object.freeze({
     id: 'normal',
@@ -81,8 +92,8 @@ export const DIFFICULTIES = Object.freeze({
     creatureSpeed: 5.2,
     elizabethSpeed: 3.5,
     victorSpeed: 4.6,
-    victorSurgeSpeed: 7,
-    hint: 'La personne protégée fuit plus longtemps et Victor se rapproche de votre vitesse. Il libère un pouvoir 5 secondes toutes les 10 secondes ; la ruée revient toutes les 2 secondes.',
+    victorSurgeSpeed: 6,
+    hint: 'La personne protégée fuit plus longtemps et Victor se rapproche de votre vitesse. Il recharge 6 secondes puis libère un pouvoir 3 secondes ; la ruée revient toutes les 5 secondes.',
   }),
   hard: Object.freeze({
     id: 'hard',
@@ -90,8 +101,8 @@ export const DIFFICULTIES = Object.freeze({
     creatureSpeed: 5.2,
     elizabethSpeed: 3.9,
     victorSpeed: 5.2,
-    victorSurgeSpeed: 8.6,
-    hint: 'La poursuite dure, Victor colle à votre vitesse et ses pouvoirs atteignent leur sommet. Il libère un pouvoir 5 secondes toutes les 10 secondes ; la ruée revient toutes les 2 secondes.',
+    victorSurgeSpeed: 7,
+    hint: 'La poursuite dure, Victor colle à votre vitesse et ses pouvoirs atteignent leur sommet. Il recharge 6 secondes puis libère un pouvoir 3 secondes ; la ruée revient toutes les 5 secondes.'
   }),
 });
 

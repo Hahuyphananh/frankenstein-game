@@ -140,7 +140,7 @@ export class StageRenderer {
     this.buildWallLayer();
   }
 
-  /** Rebuild terrain after a Hard-mode wall break. */
+  /** Rebuild terrain after a dash breaks a wall. */
   refreshMaze() {
     this.wallCells = [];
     this.maze.tiles.forEach((row, r) => {
@@ -212,7 +212,7 @@ export class StageRenderer {
     this.flash = Math.max(this.flash, 0.18);
   }
 
-  /** Stone chips and a brief flash when a Hard-mode dash breaks a wall. */
+  /** Stone chips and a brief flash when a dash breaks a wall. */
   wallBreakEffect(col, row) {
     const count = 20;
     const sparks = Array.from({ length: count }, (_, index) => {

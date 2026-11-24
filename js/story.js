@@ -572,10 +572,43 @@ export class PlayerCreature extends StoryCreature {
   }
 
   chooseDirection() {
+    if (this.dashing && this.profile.destroyWalls) {
+      this.dashInInputDirection();
+      return;
+    }
+
     const wanted = this.nextDirection;
     if (wanted && canMove(this.maze, this.col, this.row, wanted)) {
       this.direction = wanted;
       this.nextDirection = null;
     }
+  }
+
+  /**
+   * Keep the player's heading while dashing and shatter any interior wall in
+   * the way, so Space opens a shortcut instead of stopping at the first stone.
+   */
+  dashInInputDirection() {
+    const direction = this.nextDirection ?? this.direction;
+    if (!direction) {
+      this.direction = null;
+      return;
+    }
+
+    const col = this.col + direction.x;
+    const row = this.row + direction.y;
+    if (
+      col <= 0 ||
+      row <= 0 ||
+      col >= this.maze.columns - 1 ||
+      row >= this.maze.rows - 1
+    ) {
+      this.direction = null;
+      return;
+    }
+
+    if (this.maze.tiles[row][col] === TILE.WALL) this.breakWall(col, row);
+    this.direction = direction;
+    this.nextDirection = null;
   }
 }

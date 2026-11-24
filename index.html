@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#05070a" />
-    <title>Village victorien — Jeu d’arcade</title>
+    <title>Frankenstein — Jeu d’arcade</title>
     <meta
       name="description"
       content="FRANKENSTEIN est un jeu d’arcade en 2D réalisé avec HTML Canvas, CSS et JavaScript. Un village victorien, une Créature et une personne à protéger."
@@ -99,7 +99,7 @@
         >
           <header class="hud">
             <div class="hud__title-wrap">
-              <p class="label" id="hud-mode-label">Village victorien · nuit</p>
+              <p class="label" id="hud-mode-label">Frankenstein · nuit</p>
               <h2 class="hud__title" id="stage-title">Chasse</h2>
               <p class="hud__objective" id="stage-objective">
                 Vous êtes la Créature. Rejoignez la personne protégée sans être touché par Victor.
@@ -111,11 +111,11 @@
                 id="stage-victor"
                 role="status"
                 aria-live="off"
-                aria-label="Rage de Victor : prête dans 10 secondes."
+                aria-label="Pouvoir de Victor : prêt dans 6 secondes."
               >
                 <span class="power__head">
                   <span class="power__label">Victor</span>
-                  <span class="power__value" id="stage-victor-value">10 s</span>
+                  <span class="power__value" id="stage-victor-value">6 s</span>
                 </span>
                 <span class="power__track" aria-hidden="true">
                   <i class="power__fill" id="stage-victor-fill"></i>
@@ -234,12 +234,12 @@
               Vous êtes la Créature, échappée dans un village victorien. Votre but : rejoindre
               la personne protégée, choisie au hasard entre Elizabeth, Henri Clerval et William
               Frankenstein, avant que Victor ne vous touche.              Victor est contrôlé par
-              l’intelligence du jeu : il suit votre trace et, toutes les 10 secondes, il
-              déclenche pendant 5 secondes l’un de ses pouvoirs à pleine vitesse. Une seule
-              touche de Victor met fin à la partie. Appuyez sur Espace pour déclencher la ruée de la Créature : elle dure
-              1,2 seconde, multiplie sa vitesse par trois et se recharge en 2 secondes. Le
-              village est reconstruit à chaque partie, avec plusieurs entrées et des ruelles
-              qui bouclent.
+              l’intelligence du jeu : il suit votre trace et, après 6 secondes de recharge,
+              déclenche pendant 3 secondes l’un de ses pouvoirs. Une seule touche de Victor
+              met fin à la partie. Appuyez sur Espace pour déclencher la ruée de la Créature :
+              elle dure 1,1 seconde, multiplie sa vitesse par 2,8, traverse les murs et se
+              recharge en 5 secondes. Le village est reconstruit à chaque partie, avec
+              plusieurs entrées et des ruelles qui bouclent.
             </p>
           </section>
 
@@ -248,9 +248,9 @@
             <p>
               Une partie se joue en solo. Vous dirigez la Créature avec WASD ou les flèches et
               déclenchez la ruée avec Espace. Victor, piloté par l’ordinateur, est un peu plus
-              lent que vous au repos : profitez des boucles du village pour le semer. Toutes
-              les 10 secondes, sa jauge se vide et il libère pendant 5 secondes l’un de ses
-              quatre pouvoirs, à pleine vitesse. Une seconde et demie avant, sa jauge clignote
+              lent que vous au repos : profitez des boucles du village pour le semer. Après
+              6 secondes de recharge, sa jauge se vide et il libère pendant 3 secondes l’un
+              de ses quatre pouvoirs. Une seconde et demie avant, sa jauge clignote
               en rouge, un signal sonore retentit et un anneau se charge autour de lui ; une
               ruée bien placée ou un virage dans une ruelle peut encore le faire passer à
               côté. Atteignez la personne protégée pour gagner.
@@ -260,9 +260,9 @@
           <section>
             <h3>Les pouvoirs de Victor</h3>
             <p>
-              Toutes les 10 secondes, Victor libère pendant 5 secondes l’un de ses quatre
-              pouvoirs, toujours dans le même ordre : Rage, Éclair, Brume, Serment. Chacun
-              répond à un motif du roman.
+              Après 6 secondes de recharge, Victor libère pendant 3 secondes l’un de ses
+              quatre pouvoirs, toujours dans le même ordre : Rage, Éclair, Brume, Serment.
+              Chacun répond à un motif du roman.
             </p>
             <p>
               <strong>Rage</strong> — sa « rage insensée » contre sa propre créature : il vous
@@ -279,7 +279,7 @@
             <p>
               <strong>Serment</strong> — la promesse faite à Elizabeth et à sa famille : il
               abandonne la traque pour monter la garde auprès de la personne protégée pendant
-              5 secondes.
+              3 secondes.
             </p>
           </section>
 
@@ -329,7 +329,7 @@
               </li>
               <li>
                 <span class="keys__combo"><kbd>Espace</kbd></span>
-                <span>Déclencher la ruée de la Créature.</span>
+                <span>Déclencher la ruée de la Créature, qui traverse les murs.</span>
               </li>
               <li>
                 <span class="keys__combo"><kbd>P</kbd></span>
@@ -350,12 +350,12 @@
             <h3>Difficulté</h3>
             <p>
               Une seule touche de Victor met fin à la partie : apprenez à lire la jauge de sa
-              rage. Facile laisse Victor à 3,8 cases/s hors pouvoir et 5,7 pendant un pouvoir,
-              Normal à 4,6 et 7,0, Difficile à 5,2 et 8,6. La Créature se déplace à 5,2
-              cases/s dans toutes les difficultés. Sa ruée est toujours de 1,2 seconde à trois
-              fois la vitesse, avec 2 secondes de recharge. La personne protégée avance à
-              3,0, 3,5 et 3,9 cases/s selon la difficulté, erre dans les rues et fuit lorsque
-              la Créature approche.
+              rage. Facile laisse Victor à 3,8 cases/s hors pouvoir et 5,0 pendant un pouvoir,
+              Normal à 4,6 et 6,0, Difficile à 5,2 et 7,0. La Créature se déplace à 5,2
+              cases/s dans toutes les difficultés. Sa ruée dure 1,1 seconde à 2,8 fois la
+              vitesse, traverse les murs et se recharge en 5 secondes. La personne protégée
+              avance à 3,0, 3,5 et 3,9 cases/s selon la difficulté, erre dans les rues et fuit
+              lorsque la Créature approche.
             </p>
           </section>
 

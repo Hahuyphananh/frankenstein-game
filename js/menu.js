@@ -94,9 +94,9 @@ export class MenuView {
   setStage(protectedCharacter = null) {
     const protectedName = protectedCharacter?.name ?? 'la personne protégée';
 
-    this.hudLabel.textContent = 'Village victorien · nuit';
+    this.hudLabel.textContent = 'Frankenstein · nuit';
     this.hudTitle.textContent = `Atteindre ${protectedName}`;
-    this.hudObjective.textContent = `Vous êtes la Créature. Rejoignez ${protectedName} sans être touché par Victor, qui bondit à pleine vitesse 5 secondes toutes les 10 secondes.`;
+    this.hudObjective.textContent = `Vous êtes la Créature. Rejoignez ${protectedName} sans être touché par Victor, qui recharge 6 secondes puis bondit 3 secondes.`;
     this.pauseCopy.textContent = `La partie est en pause. ${protectedName} vous attend dans les ruelles.`;
     this.stageMoveHint.innerHTML =
       '<span class="stage-bar__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ou les flèches pour déplacer la Créature</span><span class="stage-bar__keys"><kbd>Espace</kbd></span><span>ruée</span>';
@@ -144,8 +144,8 @@ export class MenuView {
     warning = false,
     remaining = 0,
     cooldown = 0,
-    interval = 10,
-    duration = 5,
+    interval = 6,
+    duration = 3,
     power = null,
     next = null,
   } = {}) {
