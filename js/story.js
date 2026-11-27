@@ -45,6 +45,11 @@ function pick(list, rng) {
   return list[Math.min(list.length - 1, Math.floor(rng() * list.length))];
 }
 
+/**
+ * The three possible targets. Each one carries the genuine novel event that
+ * its ending describes, so a win reports what really happens to that person
+ * and a loss reports what Victor really does in the book.
+ */
 export const PROTECTED_CHARACTERS = Object.freeze({
   elizabeth: Object.freeze({
     id: 'elizabeth',
@@ -53,8 +58,14 @@ export const PROTECTED_CHARACTERS = Object.freeze({
     role: 'Fiancée de Victor',
     sprite: 'elizabeth',
     feminine: true,
-    safeLine: 'Elizabeth retrouve Victor, saine et sauve.',
-    lossLine: 'Victor arrive trop tard pour sauver sa fiancée.',
+    winCopy:
+      'Nuit de noces à Evian : la Créature serre la gorge d’Elizabeth dans la chambre pendant que Victor, pistolet au poing, fouille la maison à la recherche de l’assassin. Il n’arrive que pour la trouver morte.',
+    winEpilogue:
+      'Victor jure de consacrer le reste de sa vie à la poursuite de la Créature et la suivra jusqu’aux glaces de l’Arctique.',
+    safeCopy:
+      'Victor vous arrête dans les ruelles. Dans le roman, il ne capture jamais la Créature : après Evian, il la poursuit jusqu’à l’Arctique et meurt d’épuisement à bord du navire de Walton.',
+    safeEpilogue:
+      'Elizabeth veille Victor cette nuit-là ; la menace proférée sur le Montanvert reste sans effet.',
   }),
   henry: Object.freeze({
     id: 'henry',
@@ -63,8 +74,14 @@ export const PROTECTED_CHARACTERS = Object.freeze({
     role: 'Ami de Victor',
     sprite: 'henry',
     feminine: false,
-    safeLine: 'Henri Clerval retrouve Victor, sain et sauf.',
-    lossLine: 'Victor perd son ami le plus cher.',
+    winCopy:
+      'En Irlande, la Créature étrangle Henri Clerval sur la lande ; Victor, arrivé trop tard, est jeté en prison pour ce meurtre qu’il n’a pas commis.',
+    winEpilogue:
+      'Victor passe des mois dans les geôles irlandaises avant de rentrer à Genève, un deuil de plus sur les épaules.',
+    safeCopy:
+      'Victor vous arrête dans les ruelles. Dans le roman, Clerval est étranglé en Irlande et Victor, accusé du meurtre, croupit en prison ; ici, l’ami rentre vivant.',
+    safeEpilogue:
+      'Henri Clerval repart vers l’Écosse comme il l’avait promis à Victor.',
   }),
   william: Object.freeze({
     id: 'william',
@@ -73,8 +90,14 @@ export const PROTECTED_CHARACTERS = Object.freeze({
     role: 'Jeune frère de Victor',
     sprite: 'william',
     feminine: false,
-    safeLine: 'Le jeune William retourne auprès de sa famille.',
-    lossLine: 'La famille Frankenstein est dévastée.',
+    winCopy:
+      'Dans le bois de Plainpalais, la Créature étrangle le petit William ; le portrait de Caroline volé dans sa poche fait condamner Justine Moritz.',
+    winEpilogue:
+      'Justine avoue sous la pression du prêtre et meurt sur l’échafaud ; Victor, lui, sait qui a réellement tué son frère.',
+    safeCopy:
+      'Victor vous arrête dans les ruelles. Dans le roman, William meurt étranglé près de Plainpalais et Justine est exécutée pour ce crime ; ici, l’enfant rentre à Genève.',
+    safeEpilogue:
+      'William retrouve Ernest et Justine ; le portrait de Caroline reste à sa place.',
   }),
 });
 
@@ -91,45 +114,43 @@ function storyOutcome(ending, character) {
   const deadWord = character.feminine ? 'morte' : 'mort';
   const safeTitle = `${name} est ${safeWord}.`;
   const deadTitle = `${name} est ${deadWord}.`;
-  const safeEpilogue = `Le village retrouve son calme. ${character.safeLine}`;
-  const lossEpilogue = `Le village est en deuil. ${character.lossLine}`;
 
   const outcomes = {
     caught: {
-      label: 'La Créature est capturée',
+      label: 'Victor gagne',
       title: safeTitle,
-      copy: `Victor capture la Créature avant qu’elle n’atteigne ${name}. Les cloches du village sonnent la fin de l’alerte, et la nuit s’achève sans funérailles.`,
-      epilogue: safeEpilogue,
+      copy: character.safeCopy,
+      epilogue: character.safeEpilogue,
     },
     elizabeth: {
-      label: 'Tragédie au village',
+      label: 'La Créature gagne',
       title: deadTitle,
-      copy: `La Créature attrape ${name} dans les rues pavées avant que Victor ne puisse l’arrêter. ${character.lossLine}`,
-      epilogue: lossEpilogue,
+      copy: character.winCopy,
+      epilogue: character.winEpilogue,
     },
     creatureWin: {
       label: 'La Créature gagne',
       title: deadTitle,
-      copy: `Vous atteignez ${name} avant que Victor ne puisse vous intercepter. ${character.lossLine}`,
-      epilogue: lossEpilogue,
+      copy: character.winCopy,
+      epilogue: character.winEpilogue,
     },
     creatureCaught: {
       label: 'Victor gagne',
       title: safeTitle,
-      copy: `Victor intercepte la Créature avant qu’elle n’atteigne ${name}. Une seule vie aura suffi à Victor pour mettre fin à la traque.`,
-      epilogue: safeEpilogue,
+      copy: character.safeCopy,
+      epilogue: character.safeEpilogue,
     },
     creatureTimeout: {
       label: 'Temps écoulé',
       title: safeTitle,
-      copy: `Le temps s’épuise avant que la Créature n’atteigne ${name}. Victor remporte le duel et ramène ${name} au village.`,
-      epilogue: safeEpilogue,
+      copy: character.safeCopy,
+      epilogue: character.safeEpilogue,
     },
     timeout: {
       label: 'Temps écoulé',
-      title: `La Créature atteint ${name}.`,
-      copy: `Victor manque de temps, et la Créature se glisse à travers le village jusqu’à ${name}. ${character.lossLine}`,
-      epilogue: lossEpilogue,
+      title: deadTitle,
+      copy: character.winCopy,
+      epilogue: character.winEpilogue,
     },
   };
 

@@ -7,7 +7,7 @@
     <title>Frankenstein</title>
     <meta
       name="description"
-      content="FRANKENSTEIN est un jeu d’arcade en 2D réalisé avec HTML Canvas, CSS et JavaScript. Un village victorien, une Créature et une personne à protéger."
+      content="FRANKENSTEIN est un jeu d’arcade en 2D réalisé avec HTML Canvas, CSS et JavaScript. Une Créature qui fuit Victor et cherche à se venger de lui."
     />
     <link
       rel="icon"
@@ -193,6 +193,22 @@
             </p>
           </div>
 
+          <div
+            class="stage-countdown"
+            id="stage-countdown"
+            role="status"
+            aria-live="polite"
+            hidden
+          >
+            <div class="stage-countdown__inner">
+              <span class="stage-countdown__label">Départ</span>
+              <span class="stage-countdown__value" id="stage-countdown-value">5</span>
+              <span class="stage-countdown__copy" id="stage-countdown-copy">
+                La course commence dans 5 secondes.
+              </span>
+            </div>
+          </div>
+
           <div class="stage-result" id="stage-result" hidden>
             <section
               class="stage-result__panel"
@@ -251,7 +267,7 @@
       <div class="modal__inner">
         <header class="modal__head">
           <p class="label">Notes de terrain</p>
-          <h2 class="modal__title" id="instructions-title">Comment protéger un proche</h2>
+          <h2 class="modal__title" id="instructions-title">Fuir Victor</h2>
           <button
             class="modal__close"
             id="btn-close-instructions"
@@ -266,30 +282,35 @@
           <section>
             <h3>Objectif</h3>
             <p>
-              Vous êtes la Créature, échappée dans un village victorien. Votre but : rejoindre
-              la personne protégée, choisie au hasard entre Elizabeth, Henri Clerval et William
-              Frankenstein, avant que Victor ne vous touche.              Victor est contrôlé par
+              Vous êtes la Créature : Victor vous a donné la vie à Ingolstadt, puis vous a
+              abandonnée. Vous essayez d’échapper à Victor et de vous venger contre lui.
+              Atteignez la personne protégée — Elizabeth, Henri Clerval ou William Frankenstein,
+              tirée au sort au début de la partie — avant que Victor ne vous touche : une seule
+              touche met fin à la course.
+            </p>
+            <p>
+              Un compte à rebours de cinq secondes précède chaque course. Victor est contrôlé par
               l’intelligence du jeu : il suit votre trace et garde en permanence l’un de ses
-              quatre pouvoirs ; il change toutes les quelques secondes. Une seule touche de
-              Victor met fin à la partie. Appuyez sur Espace pour déclencher la ruée de la Créature :
-              elle dure 0,65 seconde, multiplie sa vitesse par 2,2 et peut briser jusqu’à quatre
-              murs alignés dans la direction engagée. Changer de direction interrompt la ruée ;
-              elle se recharge en 5 secondes. Huit villages victoriens sont générés une seule
-              fois puis revisités à tour de rôle, avec plusieurs entrées et des ruelles qui bouclent.
+              quatre pouvoirs ; il change toutes les quelques secondes. Appuyez sur Espace pour
+              déclencher la ruée de la Créature : elle dure 0,65 seconde, multiplie sa vitesse
+              par 2,2 et peut briser jusqu’à quatre murs alignés dans la direction engagée.
+              Changer de direction interrompt la ruée ; elle se recharge en 5 secondes. Huit
+              villages sont générés une seule fois puis revisités à tour de rôle, avec plusieurs
+              entrées et des ruelles qui bouclent.
             </p>
           </section>
 
           <section>
             <h3>Déroulement</h3>
             <p>
-              Une partie se joue en solo. Vous dirigez la Créature avec WASD ou les flèches et
-              déclenchez la ruée avec Espace. Victor, piloté par l’ordinateur, est un peu plus
-              lent que vous au repos : profitez des boucles du village pour le semer. Victor
-              est toujours sous l’un de ses quatre pouvoirs et change toutes les quelques
-              secondes, sans pause. Sa jauge montre le pouvoir en cours et le suivant ; une
-              ruée bien placée ou un virage dans une ruelle peut encore le faire passer à
-              côté. Atteignez la personne protégée le plus vite possible pour gagner et
-              enregistrer un temps dans les records locaux.
+              Le roman est une poursuite : Victor traque sa créature de l’Ingolstadt aux Alpes,
+              puis jusque sur les glaces de l’Arctique, où Walton le recueille à demi mort. La
+              partie reprend cette traque dans un village. Vous dirigez la Créature avec WASD ou
+              les flèches et déclenchez la ruée avec Espace. Victor, piloté par l’ordinateur,
+              est un peu plus lent que vous au repos : profitez des boucles pour le semer. Sa
+              jauge montre le pouvoir en cours et le suivant ; une ruée bien placée ou un virage
+              dans une ruelle peut encore le faire passer à côté. Atteignez la personne protégée
+              le plus vite possible pour gagner et enregistrer un temps dans les records locaux.
             </p>
           </section>
 
@@ -297,26 +318,29 @@
             <h3>Les pouvoirs de Victor</h3>
             <p>
               Victor est toujours sous l’un de ses quatre pouvoirs, toujours dans le même
-              ordre : Rage, Éclair, Brume, Serment. Chacun répond à un motif du roman. Le HUD
-              affiche le pouvoir actif, le suivant et les quatre couleurs.
+              ordre : Rage, Éclair, Brume, Serment. Chacun répond à un motif du roman, et un
+              pouvoir prend le relais du précédent sans pause. Le HUD affiche le pouvoir actif,
+              le suivant et les quatre couleurs.
             </p>
             <p>
-              <strong>Rage</strong> — sa « rage insensée » contre sa propre créature : il accélère
-              encore, comme il poursuit le monstre jusqu’aux glaces, et laisse un sillage rose
-              derrière lui.
+              <strong>Rage</strong> — sa « rage insensée » contre sa propre créature : il
+              accélère un peu au-delà de sa vitesse de traque et laisse un sillage rose derrière
+              lui.
             </p>
             <p>
-              <strong>Éclair</strong> — l’étincelle de vie qu’il découvre en étudiant la foudre :
-              il disparaît dans un éclair et reparaît quelques cases plus près de vous.
+              <strong>Éclair</strong> — l’étincelle qui l’a décidé à animer la matière morte : il
+              disparaît dans un éclair et reparaît jusqu’à sept cases plus près de vous, en
+              s’arrêtant deux cases avant.
             </p>
             <p>
               <strong>Brume</strong> — les brumes des Alpes et des Orcades où la Créature
-              apparaît : il devient spectral et glisse vers vous sans qu’on le distingue bien.
+              apparaît : il devient complètement invisible et glisse vers vous, mais sa phase
+              dure environ la moitié des autres.
             </p>
             <p>
               <strong>Serment</strong> — la promesse faite à Elizabeth et à sa famille : il
-              abandonne la traque pour monter la garde auprès de la personne protégée pendant
-              toute la phase de Serment.
+              abandonne la traque pour monter la garde auprès de la personne protégée et charge
+              tout ce qui s’approche à six cases d’elle.
             </p>
           </section>
 
@@ -386,35 +410,31 @@
           <section>
             <h3>Chronomètre et records</h3>
             <p>
-              Le chronomètre démarre au début de chaque course et se met en pause avec le jeu.
-              Il s’arrête dès que la Créature atteint la personne protégée. Le HUD compare votre
-              temps au meilleur temps connu de la difficulté. Les cinq meilleurs temps de chaque
-              difficulté sont conservés dans un cookie sur cet appareil et consultables via le
-              bouton Records du menu.
+              Le chronomètre démarre au signal du départ, quand le compte à rebours de cinq
+              secondes atteint zéro, et se met en pause avec le jeu. Il s’arrête dès que la
+              Créature atteint la personne protégée. Le HUD compare votre temps au meilleur temps
+              connu de la difficulté. Les cinq meilleurs temps de chaque difficulté sont
+              conservés dans un cookie sur cet appareil et consultables via le bouton Records du
+              menu.
             </p>
           </section>
 
           <section>
             <h3>Difficulté</h3>
             <p>
-              Une seule touche de Victor met fin à la partie : apprenez à lire la jauge de sa
-              rage. ez laisse Victor à 3,2 cases/s en traque et 5,3 pendant Rage, npc à 4,6
-              et 6,9, harr à 4,6 et 7,1. La Créature se déplace à 5,2 cases/s dans toutes les
-              difficultés. Sa ruée dure 0,65 seconde à 2,2 fois la vitesse, peut briser jusqu’à
-              quatre murs alignés et se recharge en 5 secondes ; changer de direction
-              l’interrompt. Victor garde chaque pouvoir
-              4,5, 3,5 et 2,5 secondes ; la Rage ajoute 15 % à sa vitesse d’assaut et laisse
-              un sillage rose, tandis que Brume et Serment le ralentissent un peu. La personne
-              protégée avance à 2,8, 3,5 et 4,0 cases/s selon la difficulté, erre dans les rues
-              et fuit lorsque la Créature approche.
+              Une seule touche de Victor met fin à la partie : apprenez à lire le pouvoir
+              affiché. ez laisse Victor à 3,2 cases/s en traque et 4,8 sous Rage, npc à 4,6
+              et 6,3, harr à 4,6 et 6,5. La Créature se déplace à 5,2 cases/s dans toutes les
+              difficultés. Sa ruée dure 0,65 seconde à 2,2 fois la vitesse, brise jusqu’à quatre
+              murs alignés et se recharge en 5 secondes ; changer de direction l’interrompt.
+              Chaque pouvoir dure 4,5 secondes en ez, 3,5 en npc et 2,5 en harr ; Brume dure
+              environ la moitié de ces valeurs. Rage ajoute 5 % à sa vitesse d’assaut, Éclair le
+              téléporte jusqu’à sept cases et Serment le fait garder la personne protégée à
+              pleine vitesse. La personne protégée avance à 2,8, 3,5 et 4,0 cases/s selon la
+              difficulté, erre dans les rues et fuit lorsque la Créature approche.
             </p>
           </section>
 
-          <p class="modal__note">
-            Version actuelle : huit villages victoriens générés une seule fois et revisités,
-            une personne protégée mobile choisie au hasard, la ruée de la Créature, les pouvoirs
-            permanents de Victor et un chronomètre avec cinq records locaux par difficulté.
-          </p>
         </div>
 
         <footer class="modal__foot">

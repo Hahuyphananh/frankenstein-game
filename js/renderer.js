@@ -544,12 +544,14 @@ export class StageRenderer {
   }
 
   drawPlayer() {
+    // During Brume Victor is completely invisible: no body, no aura, no wake.
+    if (this.player.invisible) return;
+
     const point = this.camera.toScreen(this.player.x, this.player.y);
     const direction = this.player.direction?.name ?? this.playerFacing;
     this.playerFacing = direction;
     const frame = this.player.moving ? Math.floor(this.time * 9) % 2 : 0;
 
-    const misty = Boolean(this.player.misty);
     const activePower = this.player.activePower ?? 'rage';
     const powerRgb = VICTOR_POWERS[activePower]?.rgb ?? '255, 92, 122';
 
@@ -566,7 +568,7 @@ export class StageRenderer {
       this.ctx.restore();
     }
 
-    // Each power gets its own aura; Brume additionally turns Victor spectral.
+    // Each visible power gets its own aura.
     if (this.player.surging) {
       const pulse = this.animate ? 0.5 + 0.5 * Math.sin(this.time * 8) : 0.8;
       const radius = this.camera.cell * (0.9 + pulse * 0.3);
@@ -578,7 +580,7 @@ export class StageRenderer {
         point.y,
         radius,
       );
-      const auraAlpha = misty ? 0.2 + pulse * 0.1 : 0.28 + pulse * 0.14;
+      const auraAlpha = 0.28 + pulse * 0.14;
       glow.addColorStop(0, `rgba(${powerRgb}, ${auraAlpha})`);
       glow.addColorStop(1, `rgba(${powerRgb}, 0)`);
       this.ctx.save();
@@ -643,7 +645,6 @@ export class StageRenderer {
     }
 
     this.ctx.save();
-    if (misty) this.ctx.globalAlpha = 0.4;
     drawVictor(this.ctx, {
       x: point.x,
       y: point.y,

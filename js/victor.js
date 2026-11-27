@@ -23,7 +23,8 @@ const OPPOSITE = Object.freeze({
  *
  *   rage    pure pursuit at top speed ("maddening rage")
  *   eclair  blinks several tiles toward the Creature (the spark of life)
- *   brume   turns spectral while hunting (the mists where the Creature appears)
+ *   brume   vanishes completely for a shorter phase (the mists where the
+ *           Creature appears)
  *   pacte   runs to guard the protected person (his vow to Elizabeth)
  */
 export class VictorHunter extends GridActor {
@@ -59,7 +60,6 @@ export class VictorHunter extends GridActor {
     this.goalField = null;
     // GridActor's constructor calls reset() before Victor's own fields are
     // assigned, so every read here must tolerate the first, incomplete pass.
-    this.surgeFor = this.powerDuration ?? 0;
     this.powerCooldownFor = 0;
     this.powerIndex = 1;
     this.activePower = this.powerCycle?.[0] ?? 'rage';
@@ -67,6 +67,10 @@ export class VictorHunter extends GridActor {
     this.blinks = 0;
     const effect = this.powerEffects?.[this.activePower] ?? {};
     this.powerSpeedScale = effect.speedScale ?? 1;
+    this.surgeFor =
+      this.powerDuration !== undefined
+        ? this.powerDuration * (effect.durationScale ?? 1)
+        : 0;
     if (this.huntSpeed !== undefined) this.speed = this.speedForPower();
   }
 
@@ -92,9 +96,15 @@ export class VictorHunter extends GridActor {
     return this.powerCycle[this.powerIndex % this.powerCycle.length] ?? 'rage';
   }
 
-  /** Spectral appearance used by the renderer during the Brume phase. */
-  get misty() {
+  /** Brume is the only phase where Victor disappears completely. */
+  get invisible() {
     return this.activePower === 'brume';
+  }
+
+  /** Phase length of the active power; Brume is shorter than the rest. */
+  get activePowerDuration() {
+    const effect = this.powerEffects?.[this.activePower] ?? {};
+    return this.powerDuration * (effect.durationScale ?? 1);
   }
 
   update(dt, context) {
@@ -120,7 +130,7 @@ export class VictorHunter extends GridActor {
 
     const effect = this.powerEffects[this.activePower] ?? {};
     this.powerSpeedScale = effect.speedScale ?? 1;
-    this.surgeFor = this.powerDuration;
+    this.surgeFor = this.powerDuration * (effect.durationScale ?? 1);
 
     if (this.activePower === 'eclair' && context?.goal) {
       this.blinkToward(
@@ -133,8 +143,9 @@ export class VictorHunter extends GridActor {
 
   chooseDirection(context) {
     const goal = context?.goal;
-    const protect = context?.protect;
-    const target = this.guarding && protect ? protect : goal;
+    const guard = this.guarding ? context?.protect ?? null : null;
+    const intercepts = Boolean(guard && goal) && this.withinGuardReach(goal, guard);
+    const target = intercepts ? goal : guard ?? goal;
     const options = walkableNeighbors(this.maze, this.col, this.row);
     if (!options.length) {
       this.direction = null;
@@ -148,9 +159,10 @@ export class VictorHunter extends GridActor {
 
     const field = this.fieldFor(target);
 
-    // The Oath phase is spent standing guard beside the protected person
-    // instead of following the Creature.
-    if (this.guarding && fieldDistance(field, this.maze, this.col, this.row) <= 1) {
+    // Out of reach he stands guard beside the protected person instead of
+    // following the Creature; inside guardRadius he leaves the post to cut
+    // the Creature off.
+    if (guard && !intercepts && fieldDistance(field, this.maze, this.col, this.row) <= 1) {
       this.direction = null;
       return;
     }
@@ -180,6 +192,13 @@ export class VictorHunter extends GridActor {
 
     const pool = bestDirections.length ? bestDirections : options;
     this.direction = pool[Math.floor(this.rng() * pool.length)];
+  }
+
+  /** True when the Creature is close enough to the protected person to strike. */
+  withinGuardReach(goal, guard) {
+    const radius = this.powerEffects.pacte?.guardRadius ?? 0;
+    if (!(radius > 0)) return false;
+    return Math.hypot(goal.x - guard.x, goal.y - guard.y) <= radius;
   }
 
   /** Random legal movement when no target is known yet. */

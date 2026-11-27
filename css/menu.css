@@ -767,6 +767,59 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Five-second start countdown drawn over the board. */
+.stage-countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+  background: radial-gradient(
+    60% 60% at 50% 50%,
+    rgba(3, 5, 7, 0.45),
+    rgba(3, 5, 7, 0.82)
+  );
+  backdrop-filter: blur(2px);
+}
+
+.stage-countdown[hidden] {
+  display: none;
+}
+
+.stage-countdown__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.stage-countdown__label {
+  color: rgba(239, 232, 214, 0.45);
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.stage-countdown__value {
+  color: var(--bone);
+  font-family: var(--serif);
+  font-size: clamp(5rem, 18vw, 9rem);
+  font-weight: 700;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 60px rgba(214, 179, 106, 0.35);
+}
+
+.stage-countdown__copy {
+  color: var(--bone-dim);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+}
+
 .cast {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -950,13 +1003,6 @@
 .keys__combo {
   display: inline-flex;
   gap: 4px;
-}
-
-.modal__body .modal__note {
-  padding: 10px 12px;
-  border-left: 2px solid rgba(214, 179, 106, 0.5);
-  background: rgba(214, 179, 106, 0.04);
-  font-size: 0.8rem;
 }
 
 .modal__foot {

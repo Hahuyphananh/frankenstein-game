@@ -32,6 +32,9 @@ import {
 } from './story.js';
 import { VictorHunter } from './victor.js';
 
+/** Start-of-run countdown shown over the board before the clock starts. */
+const COUNTDOWN_SECONDS = 5;
+
 /**
  * Application state machine. Owns the menu ⇄ stage transition, actors, the
  * pause state and results. The player is the Creature; Victor is AI.
@@ -53,6 +56,8 @@ export class Game {
     this.lastResult = null;
     this.lastStarts = null;
     this.warningPlayed = false;
+    this.countdownRemaining = 0;
+    this.countdownShown = 0;
     this.runTimer = new RunTimer();
     this.playerName = loadPlayerName();
     this.bestTimeMs = null;
@@ -89,7 +94,22 @@ export class Game {
 
   update(dt) {
     this.renderer.update(dt);
-    if (this.screen !== 'stage' || this.stageStatus !== 'playing') return;
+    if (this.screen !== 'stage') return;
+
+    // Five-second start countdown: the board is visible, the actors stay put
+    // and the run clock has not started yet.
+    if (this.stageStatus === 'countdown') {
+      this.countdownRemaining = Math.max(0, this.countdownRemaining - dt);
+      const shown = Math.ceil(this.countdownRemaining);
+      if (shown > 0 && shown !== this.countdownShown) {
+        this.countdownShown = shown;
+        this.view.showCountdown(shown);
+      }
+      if (this.countdownRemaining <= 0) this.beginPlay();
+      return;
+    }
+
+    if (this.stageStatus !== 'playing') return;
     if (!this.player || !this.creature) return;
 
     this.view.setRunTime(this.runTimer.elapsed(), this.bestTimeMs);
@@ -152,7 +172,7 @@ export class Game {
     restoreMaze(this.maze, map.layout);
     this.renderer.refreshMaze();
     this.currentDifficulty = difficulty;
-    this.stageStatus = 'playing';
+    this.stageStatus = 'countdown';
     this.warningPlayed = false;
 
     const starts = chooseHuntStartPositions(this.maze, { previous: this.lastStarts });
@@ -190,8 +210,25 @@ export class Game {
     this.renderer.setCreature(this.creature);
     this.renderer.setStory(this.story);
     this.bestTimeMs = fastestTimeForDifficulty(loadLeaderboard(), difficulty.id);
+    this.runTimer.reset();
+    this.view.setRunTime(0, this.bestTimeMs);
+    this.beginCountdown();
+  }
+
+  /** Show the five-second warning; the clock starts when it reaches zero. */
+  beginCountdown() {
+    this.countdownRemaining = COUNTDOWN_SECONDS;
+    this.countdownShown = COUNTDOWN_SECONDS;
+    this.view.showCountdown(COUNTDOWN_SECONDS);
+  }
+
+  beginPlay() {
+    this.stageStatus = 'playing';
+    this.countdownRemaining = 0;
+    this.view.hideCountdown();
     this.runTimer.start();
     this.view.setRunTime(0, this.bestTimeMs);
+    this.audio.play('move');
   }
 
   restart() {
@@ -229,7 +266,7 @@ export class Game {
       remaining: victor.surgeRemaining,
       cooldown: victor.powerCooldown,
       interval: victor.powerInterval,
-      duration: victor.powerDuration,
+      duration: victor.activePowerDuration,
       speed: victor.speed,
       power: VICTOR_POWERS[victor.activePower] ?? VICTOR_POWERS.rage,
       next: VICTOR_POWERS[victor.nextPower] ?? null,
@@ -343,6 +380,8 @@ export class Game {
     this.renderer.setPlayer(null);
     this.renderer.setCreature(null);
     this.renderer.setStory(null);
+    this.countdownRemaining = 0;
+    this.view.hideCountdown();
     this.view.hidePause();
     this.view.hideStageResult();
     this.view.showScreen('menu');

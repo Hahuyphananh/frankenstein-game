@@ -68,7 +68,7 @@ export const VICTOR_POWERS = Object.freeze({
     color: '#7fd7ff',
     soft: 'rgba(127, 215, 255, 0.1)',
     rgb: '127, 215, 255',
-    note: 'l’étincelle de vie le téléporte de quelques cases vers vous',
+    note: 'l’étincelle de vie le téléporte de sept cases vers vous',
   }),
   brume: Object.freeze({
     id: 'brume',
@@ -76,7 +76,7 @@ export const VICTOR_POWERS = Object.freeze({
     color: '#b8d8c8',
     soft: 'rgba(184, 216, 200, 0.1)',
     rgb: '184, 216, 200',
-    note: 'la brume le rend spectral et difficile à suivre',
+    note: 'la brume l’efface complètement et il se rapproche sans qu’on le voie',
   }),
   pacte: Object.freeze({
     id: 'pacte',
@@ -84,22 +84,27 @@ export const VICTOR_POWERS = Object.freeze({
     color: '#ffd166',
     soft: 'rgba(255, 209, 102, 0.12)',
     rgb: '255, 209, 102',
-    note: 'son serment le pousse à monter la garde près de la personne protégée',
+    note: 'son serment le pousse à garder la personne protégée et à charger ce qui l’approche',
   }),
 });
 
 export const VICTOR_POWER_CYCLE = Object.freeze(['rage', 'eclair', 'brume', 'pacte']);
 
 /**
- * Per-power movement adjustments. Rage boosts Victor beyond his surge speed;
- * Éclair returns to the normal hunt after its blink, while Brume and Serment
- * move slower during their phases.
+ * Per-power movement adjustments.
+ *
+ *   rage    a small edge over his hunt speed (the "maddening rage"), no longer
+ *           the big surge it used to be
+ *   eclair  a long blink: seven tiles toward the Creature, stopping two short
+ *   brume   complete invisibility, but its phase is shorter than the others
+ *   pacte   guards at full hunt speed and charges anything that comes within
+ *           guardRadius tiles of the protected person
  */
 export const VICTOR_POWER_EFFECTS = Object.freeze({
-  rage: Object.freeze({ speedScale: 1.15 }),
-  eclair: Object.freeze({ blinkSteps: 3, blinkStop: 3 }),
-  brume: Object.freeze({ speedScale: 0.85 }),
-  pacte: Object.freeze({ speedScale: 0.9 }),
+  rage: Object.freeze({ speedScale: 1.05 }),
+  eclair: Object.freeze({ blinkSteps: 7, blinkStop: 2 }),
+  brume: Object.freeze({ speedScale: 0.9, durationScale: 0.55 }),
+  pacte: Object.freeze({ speedScale: 1, guardRadius: 6 }),
 });
 
 export const DIFFICULTIES = Object.freeze({
